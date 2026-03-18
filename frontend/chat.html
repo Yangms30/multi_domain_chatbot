@@ -593,8 +593,9 @@
         if (!text && !pendingImageBase64) return;
         if (isStreaming) return;
 
-        var messageText = text || '(image)';
+        var messageText = text || 'Please analyze this image.';
         var imageData = pendingImageBase64;
+        console.log('Sending:', { hasImage: !!imageData, imageLength: imageData ? imageData.length : 0, text: messageText });
 
         messageInput.value = '';
         messageInput.style.height = 'auto';
