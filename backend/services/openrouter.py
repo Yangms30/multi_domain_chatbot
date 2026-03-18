@@ -51,11 +51,17 @@ class OpenRouterClient:
         stream: bool = False,
     ) -> dict | AsyncGenerator:
         # Build vision message
+        # image_base64 may already include data URI prefix from frontend
+        if image_base64.startswith("data:"):
+            image_url = image_base64
+        else:
+            image_url = f"data:image/jpeg;base64,{image_base64}"
+
         vision_content = [
             {"type": "text", "text": user_text},
             {
                 "type": "image_url",
-                "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"},
+                "image_url": {"url": image_url},
             },
         ]
 
