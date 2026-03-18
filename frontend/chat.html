@@ -381,7 +381,29 @@
                 : 'group flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 cursor-pointer transition-colors';
             var iconName = isActive ? 'chat_bubble' : 'history';
             var titleText = escapeHtml(s.title || s.id || 'Untitled');
-            div.innerHTML = '<span class="material-symbols-outlined text-xl">' + iconName + '</span><span class="text-sm font-medium truncate flex-1">' + titleText + '</span>';
+            div.innerHTML = '<span class="material-symbols-outlined text-xl">' + iconName + '</span><span class="text-sm font-medium truncate flex-1">' + titleText + '</span><button class="delete-session-btn hidden group-hover:flex items-center justify-center size-6 rounded-md hover:bg-red-100 dark:hover:bg-red-900/30 text-slate-400 hover:text-red-500 transition-all" title="Delete"><span class="material-symbols-outlined text-sm">delete</span></button>';
+
+            // Delete button
+            var deleteBtn = div.querySelector('.delete-session-btn');
+            (function(btn, sid) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (confirm('Delete this conversation?')) {
+                        api.deleteSession(sid).then(function() {
+                            if (sessionId === sid) {
+                                sessionId = null;
+                                chatMessages.innerHTML = '';
+                                var url = new URL(window.location);
+                                url.searchParams.delete('session_id');
+                                window.history.pushState({}, '', url);
+                                showWelcomeMessage();
+                            }
+                            loadHistory();
+                        });
+                    }
+                });
+            })(deleteBtn, s.id);
+
             div.addEventListener('click', function() {
                 sessionId = s.id;
                 var url = new URL(window.location);
