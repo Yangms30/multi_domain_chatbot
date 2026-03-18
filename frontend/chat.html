@@ -108,7 +108,7 @@
 <option value="anthropic/claude-haiku-4">Claude Haiku 4</option>
 <option value="google/gemini-2.5-flash-preview">Gemini 2.5 Flash</option>
 <option value="google/gemini-2.5-pro-preview">Gemini 2.5 Pro</option>
-<option value="x-ai/grok-3-mini">Grok 3 Mini</option>
+<option value="x-ai/grok-3-mini">Grok 3 Mini (text only)</option>
 </select>
 </div>
 <div class="flex items-center gap-2">
@@ -579,6 +579,14 @@
         });
     }
 
+    // --- System Notice ---
+    function appendSystemNotice(text) {
+        var div = document.createElement('div');
+        div.className = 'flex justify-center my-2';
+        div.innerHTML = '<div class="flex items-center gap-2 px-4 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/30 rounded-lg text-xs text-amber-700 dark:text-amber-400"><span class="material-symbols-outlined text-sm">info</span>' + escapeHtml(text) + '</div>';
+        chatMessages.appendChild(div);
+    }
+
     // --- Send Message ---
     async function sendMessage() {
         var text = messageInput.value.trim();
@@ -604,6 +612,21 @@
         typingIndicator.classList.remove('hidden');
 
         var selectedModel = modelSelect.value;
+
+        // Multimodal model check for image messages
+        var MULTIMODAL_MODELS = [
+            'openai/gpt-4o', 'openai/gpt-4o-mini',
+            'anthropic/claude-sonnet-4', 'anthropic/claude-haiku-4',
+            'google/gemini-2.5-flash-preview', 'google/gemini-2.5-pro-preview'
+        ];
+        var switchedModel = null;
+        if (imageData && MULTIMODAL_MODELS.indexOf(selectedModel) === -1) {
+            switchedModel = 'openai/gpt-4o';
+            appendSystemNotice('The selected model (' + modelSelect.options[modelSelect.selectedIndex].text + ') does not support images. Switching to GPT-4o for this message.');
+            scrollToBottom();
+        }
+        var modelToUse = switchedModel || selectedModel;
+
         var bubble = createStreamingBotBubble();
         var contentDiv = bubble.querySelector('[data-streaming="true"]');
         var fullText = '';
@@ -611,9 +634,9 @@
         try {
             var reader;
             if (imageData) {
-                reader = await api.streamImageMessage(messageText, domain, imageData, sessionId, selectedModel);
+                reader = await api.streamImageMessage(messageText, domain, imageData, sessionId, modelToUse);
             } else {
-                reader = await api.streamMessage(messageText, domain, sessionId, selectedModel);
+                reader = await api.streamMessage(messageText, domain, sessionId, modelToUse);
             }
 
             parseSSEStream(reader,
