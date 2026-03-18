@@ -235,7 +235,7 @@
 
     // ---- Fetch chatbots from API ----
     function fetchChatbots(category) {
-        let url = '/api/chatbots';
+        let url = API_BASE + '/api/chatbots';
         if (category) {
             url += '?category=' + encodeURIComponent(category);
         }
