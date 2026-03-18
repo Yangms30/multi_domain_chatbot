@@ -568,7 +568,7 @@
         movie: {
             greeting: "Hey! I'm your Movie Expert.",
             description: "I can recommend movies, identify films from images, and discuss everything about cinema.",
-            suggestions: ["Recommend sci-fi movies like Interstellar", "What are the best films of 2024?", "Suggest a feel-good movie for tonight"]
+            suggestions: ["Recommend sci-fi movies like Interstellar", "What are the best films of 2024?", "Suggest a feel-good movie for tonight", "📷 Send me a screenshot and I'll guess the movie!"]
         }
     };
 
@@ -604,9 +604,14 @@
 
         chatMessages.appendChild(div);
 
-        // Click suggestion to send as message
+        // Click suggestion to send as message or open image picker
         div.querySelectorAll('.welcome-suggestion').forEach(function(btn) {
             btn.addEventListener('click', function() {
+                if (btn.textContent.indexOf('📷') !== -1) {
+                    messageInput.value = 'What movie is this from?';
+                    imageFileInput.click();
+                    return;
+                }
                 messageInput.value = btn.textContent;
                 div.remove();
                 sendMessage();
