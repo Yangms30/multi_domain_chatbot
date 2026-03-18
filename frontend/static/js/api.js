@@ -1,7 +1,7 @@
-// API Base URL: empty for local (same origin), set to Render URL for production
+// API Base URL: empty for local (same origin), Render URL for production
 const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? ''
-    : (window.__API_BASE || '');
+    : 'https://multi-domain-chatbot-5ebb.onrender.com';
 
 const api = {
     // --- Chatbots ---
