@@ -102,13 +102,22 @@
 <div class="flex items-center gap-4">
 <h2 class="font-bold text-slate-900 dark:text-slate-100" id="headerBotName">Chatbot</h2>
 <select id="modelSelect" class="text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-slate-600 dark:text-slate-300 focus:ring-2 focus:ring-primary focus:border-transparent outline-none cursor-pointer">
+<optgroup label="Fast & Affordable">
 <option value="openai/gpt-4o-mini">GPT-4o Mini</option>
-<option value="openai/gpt-4o">GPT-4o</option>
-<option value="anthropic/claude-sonnet-4">Claude Sonnet 4</option>
 <option value="anthropic/claude-haiku-4">Claude Haiku 4</option>
 <option value="google/gemini-2.5-flash-preview">Gemini 2.5 Flash</option>
+</optgroup>
+<optgroup label="Smart">
+<option value="openai/gpt-4o">GPT-4o</option>
+<option value="anthropic/claude-sonnet-4">Claude Sonnet 4</option>
 <option value="google/gemini-2.5-pro-preview">Gemini 2.5 Pro</option>
-<option value="x-ai/grok-3-mini">Grok 3 Mini (text only)</option>
+<option value="x-ai/grok-3">Grok 3</option>
+</optgroup>
+<optgroup label="Top Tier">
+<option value="openai/gpt-4.1">GPT-4.1</option>
+<option value="openai/o4-mini">o4-mini (reasoning)</option>
+<option value="anthropic/claude-opus-4">Claude Opus 4</option>
+</optgroup>
 </select>
 </div>
 <div class="flex items-center gap-2">
@@ -613,8 +622,8 @@
 
         // Multimodal model check for image messages
         var MULTIMODAL_MODELS = [
-            'openai/gpt-4o', 'openai/gpt-4o-mini',
-            'anthropic/claude-sonnet-4', 'anthropic/claude-haiku-4',
+            'openai/gpt-4o', 'openai/gpt-4o-mini', 'openai/gpt-4.1', 'openai/o4-mini',
+            'anthropic/claude-sonnet-4', 'anthropic/claude-haiku-4', 'anthropic/claude-opus-4',
             'google/gemini-2.5-flash-preview', 'google/gemini-2.5-pro-preview'
         ];
         var switchedModel = null;
