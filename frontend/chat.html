@@ -332,6 +332,8 @@
         // Load session if session_id provided
         if (sessionId) {
             await loadSession(sessionId);
+        } else {
+            showWelcomeMessage();
         }
 
         // Load history
@@ -521,6 +523,62 @@
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
+    // --- Welcome Message ---
+    var WELCOME_MESSAGES = {
+        healthcare: {
+            greeting: "Hi! I'm your personal Health Coach.",
+            description: "I can help you with health consultations, symptom analysis, exercise routines, and diet recommendations.",
+            suggestions: ["How can I improve my sleep?", "Create a workout plan for me", "What should I eat for weight loss?"]
+        },
+        movie: {
+            greeting: "Hey! I'm your Movie Expert.",
+            description: "I can recommend movies, identify films from images, and discuss everything about cinema.",
+            suggestions: ["Recommend sci-fi movies like Interstellar", "What are the best films of 2024?", "Suggest a feel-good movie for tonight"]
+        }
+    };
+
+    function showWelcomeMessage() {
+        var botName = (chatbot && chatbot.name) || domain;
+        var botIcon = (chatbot && chatbot.icon) || 'smart_toy';
+        var botColor = (chatbot && chatbot.color) || '#256af4';
+        var welcome = WELCOME_MESSAGES[domain] || {
+            greeting: "Hi! I'm " + botName + ".",
+            description: "How can I help you today?",
+            suggestions: []
+        };
+
+        var suggestionsHtml = '';
+        if (welcome.suggestions.length > 0) {
+            suggestionsHtml = '<div class="flex flex-wrap gap-2 mt-4">' +
+                welcome.suggestions.map(function(s) {
+                    return '<button class="welcome-suggestion px-4 py-2 text-sm bg-slate-100 dark:bg-slate-700/50 hover:bg-primary/10 hover:text-primary border border-slate-200 dark:border-slate-600 rounded-xl transition-all cursor-pointer text-slate-600 dark:text-slate-300">' + escapeHtml(s) + '</button>';
+                }).join('') +
+                '</div>';
+        }
+
+        var div = document.createElement('div');
+        div.id = 'welcomeContainer';
+        div.className = 'flex flex-col items-center justify-center py-16 max-w-2xl mx-auto text-center';
+        div.innerHTML =
+            '<div class="size-16 rounded-2xl flex items-center justify-center mb-6 shadow-lg" style="background: ' + botColor + '20; color: ' + botColor + ';">' +
+                '<span class="material-symbols-outlined text-4xl">' + escapeHtml(botIcon) + '</span>' +
+            '</div>' +
+            '<h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">' + escapeHtml(welcome.greeting) + '</h2>' +
+            '<p class="text-slate-500 dark:text-slate-400 mb-2">' + escapeHtml(welcome.description) + '</p>' +
+            suggestionsHtml;
+
+        chatMessages.appendChild(div);
+
+        // Click suggestion to send as message
+        div.querySelectorAll('.welcome-suggestion').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                messageInput.value = btn.textContent;
+                div.remove();
+                sendMessage();
+            });
+        });
+    }
+
     // --- Send Message ---
     async function sendMessage() {
         var text = messageInput.value.trim();
@@ -533,6 +591,10 @@
         messageInput.value = '';
         messageInput.style.height = 'auto';
         clearImagePreview();
+
+        // Remove welcome message if present
+        var welcomeEl = document.getElementById('welcomeContainer');
+        if (welcomeEl) welcomeEl.remove();
 
         appendUserMessage(messageText);
         scrollToBottom();
@@ -646,6 +708,7 @@
         var url = new URL(window.location);
         url.searchParams.delete('session_id');
         window.history.pushState({}, '', url);
+        showWelcomeMessage();
         loadHistory();
     });
 
