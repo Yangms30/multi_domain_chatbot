@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Chat History &amp; Management</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#256af4",
+                        "background-light": "#f5f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="flex h-screen overflow-hidden">
+<!-- Sidebar Navigation -->
+<aside class="w-64 border-r border-slate-200 dark:border-slate-800 flex flex-col bg-white dark:bg-background-dark/50">
+<div class="p-6 flex items-center gap-3">
+<div class="size-8 bg-primary rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined">auto_awesome</span>
+</div>
+<h1 class="text-xl font-bold tracking-tight">Nexus AI</h1>
+</div>
+<nav class="flex-1 px-4 space-y-2">
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 bg-primary/10 text-primary rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="text-sm font-medium">Chat History</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">star</span>
+<span class="text-sm font-medium">Favorites</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">archive</span>
+<span class="text-sm font-medium">Archived</span>
+</a>
+<div class="pt-4 pb-2 px-3">
+<p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">System</p>
+</div>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">help_outline</span>
+<span class="text-sm font-medium">Support</span>
+</a>
+</nav>
+<div class="p-4 border-t border-slate-200 dark:border-slate-800">
+<div class="flex items-center gap-3 px-2">
+<div class="size-10 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="User avatar placeholder profile picture" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAwDyKobH9vDj9fhJKla2psB5efHuDe1YQX8Yxz-TOlZD0TJDsSvrJyzZPMW92pAHRILq-qu6hH8GFLoCnfe51o4Geea0Ll71Q8_AewcbFSDWjETDJ-9HMLtc_Cw2omD3IehNFX5pCfByhYpd9aqyNn8rUdbspuxCcMMc2VUabhIJG-kaNVwgRscTHkA7xAWGxdZrP4VXyr0xbTMDBA2Wq9TcDrkTGpNQFlVdR6YrodXsdbaJxjlCrw2BQr8PX1NF_HTPzEtpSYMl4"/>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-semibold truncate">Alex Rivera</p>
+<p class="text-xs text-slate-500 truncate">Pro Plan</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-background-light dark:bg-background-dark">
+<!-- Header -->
+<header class="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-background-dark/50 backdrop-blur-md flex items-center justify-between px-8">
+<div class="flex items-center gap-4 flex-1">
+<div class="relative max-w-md w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+<input class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary transition-all" placeholder="Search conversations..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-sm">add</span>
+                        New Chat
+                    </button>
+</div>
+</header>
+<!-- Content -->
+<div class="flex-1 overflow-y-auto p-8">
+<div class="max-w-6xl mx-auto space-y-6">
+<!-- Title and Filters -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h2 class="text-3xl font-bold tracking-tight">Chat History</h2>
+<p class="text-slate-500 dark:text-slate-400 mt-1">Review and manage your interaction records.</p>
+</div>
+<div class="flex items-center gap-3 overflow-x-auto pb-2 md:pb-0">
+<button class="flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-white text-sm font-medium whitespace-nowrap">
+                                All Domains
+                            </button>
+<button class="flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-medium whitespace-nowrap hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-sm">support_agent</span>
+                                Support
+                            </button>
+<button class="flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-medium whitespace-nowrap hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-sm">edit_note</span>
+                                Writing
+                            </button>
+<button class="flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-medium whitespace-nowrap hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-sm">code</span>
+                                Technical
+                            </button>
+</div>
+</div>
+<!-- History Table -->
+<div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Chatbot Name</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Last Message Snippet</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Date</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+<span class="material-symbols-outlined">support_agent</span>
+</div>
+<span class="font-medium">Global Support Bot</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<p class="text-sm text-slate-500 dark:text-slate-400 truncate max-w-xs">I have processed your refund request for order #8210...</p>
+</td>
+<td class="px-6 py-4">
+<span class="text-sm text-slate-500 dark:text-slate-400">Oct 24, 2023</span>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors text-slate-500 dark:text-slate-400" title="Rename">
+<span class="material-symbols-outlined text-xl">edit</span>
+</button>
+<button class="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors text-slate-500 dark:text-slate-400 hover:text-red-600" title="Delete">
+<span class="material-symbols-outlined text-xl">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
+<span class="material-symbols-outlined">edit_note</span>
+</div>
+<span class="font-medium">Creative Writer AI</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<p class="text-sm text-slate-500 dark:text-slate-400 truncate max-w-xs">The neon lights of Neo-Tokyo flickered like dying stars...</p>
+</td>
+<td class="px-6 py-4">
+<span class="text-sm text-slate-500 dark:text-slate-400">Oct 23, 2023</span>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors text-slate-500 dark:text-slate-400" title="Rename">
+<span class="material-symbols-outlined text-xl">edit</span>
+</button>
+<button class="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors text-slate-500 dark:text-slate-400 hover:text-red-600" title="Delete">
+<span class="material-symbols-outlined text-xl">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
+<span class="material-symbols-outlined">code</span>
+</div>
+<span class="font-medium">Code Architect</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<p class="text-sm text-slate-500 dark:text-slate-400 truncate max-w-xs">You should use a UseEffect hook to handle the API side-effect...</p>
+</td>
+<td class="px-6 py-4">
+<span class="text-sm text-slate-500 dark:text-slate-400">Oct 22, 2023</span>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors text-slate-500 dark:text-slate-400" title="Rename">
+<span class="material-symbols-outlined text-xl">edit</span>
+</button>
+<button class="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors text-slate-500 dark:text-slate-400 hover:text-red-600" title="Delete">
+<span class="material-symbols-outlined text-xl">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400">
+<span class="material-symbols-outlined">psychology</span>
+</div>
+<span class="font-medium">General Assistant</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<p class="text-sm text-slate-500 dark:text-slate-400 truncate max-w-xs">The weather in Tokyo today is 22°C with light showers...</p>
+</td>
+<td class="px-6 py-4">
+<span class="text-sm text-slate-500 dark:text-slate-400">Oct 21, 2023</span>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors text-slate-500 dark:text-slate-400" title="Rename">
+<span class="material-symbols-outlined text-xl">edit</span>
+</button>
+<button class="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors text-slate-500 dark:text-slate-400 hover:text-red-600" title="Delete">
+<span class="material-symbols-outlined text-xl">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400">
+<span class="material-symbols-outlined">description</span>
+</div>
+<span class="font-medium">Document Analyzer</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<p class="text-sm text-slate-500 dark:text-slate-400 truncate max-w-xs">Section 4.2 of the contract specifies the termination clauses...</p>
+</td>
+<td class="px-6 py-4">
+<span class="text-sm text-slate-500 dark:text-slate-400">Oct 20, 2023</span>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors text-slate-500 dark:text-slate-400" title="Rename">
+<span class="material-symbols-outlined text-xl">edit</span>
+</button>
+<button class="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors text-slate-500 dark:text-slate-400 hover:text-red-600" title="Delete">
+<span class="material-symbols-outlined text-xl">delete</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="px-6 py-4 flex items-center justify-between border-t border-slate-200 dark:border-slate-800">
+<p class="text-sm text-slate-500 dark:text-slate-400">Showing 1 to 5 of 42 results</p>
+<div class="flex items-center gap-1">
+<button class="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="w-8 h-8 rounded bg-primary text-white text-sm font-bold flex items-center justify-center">1</button>
+<button class="w-8 h-8 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-medium transition-colors">2</button>
+<button class="w-8 h-8 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-medium transition-colors">3</button>
+<span class="px-1 text-slate-400">...</span>
+<button class="w-8 h-8 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-medium transition-colors">8</button>
+<button class="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Usage Stats Section -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+<div class="bg-primary/5 dark:bg-primary/10 p-6 rounded-xl border border-primary/10">
+<p class="text-xs font-bold text-primary uppercase tracking-wider">Total Chats</p>
+<h3 class="text-2xl font-bold mt-1">1,284</h3>
+</div>
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800">
+<p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Active This Month</p>
+<h3 class="text-2xl font-bold mt-1">156</h3>
+</div>
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800">
+<p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Storage Used</p>
+<h3 class="text-2xl font-bold mt-1">4.2 GB</h3>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

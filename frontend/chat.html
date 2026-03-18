@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DEMO - Chat</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#256af4",
+                        "background-light": "#f5f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #282e39;
+            border-radius: 10px;
+        }
+        #messageInput {
+            max-height: 150px;
+        }
+        .bot-message-content p { margin-bottom: 0.75rem; }
+        .bot-message-content p:last-child { margin-bottom: 0; }
+        .bot-message-content ul { list-style-type: disc; padding-left: 1.25rem; margin-bottom: 0.75rem; }
+        .bot-message-content ul li { margin-bottom: 0.5rem; }
+        .bot-message-content ol { list-style-type: decimal; padding-left: 1.25rem; margin-bottom: 0.75rem; }
+        .bot-message-content ol li { margin-bottom: 0.5rem; }
+        .bot-message-content strong { color: #256af4; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 antialiased overflow-hidden">
+<div class="flex h-screen w-full">
+<!-- Sidebar -->
+<aside class="w-80 flex-shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark flex flex-col h-full">
+<!-- Sidebar Header -->
+<div class="p-6">
+<div class="flex items-center gap-3 mb-8" id="sidebarBotInfo">
+<div class="size-10 rounded-xl bg-primary flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-2xl" id="sidebarBotIcon">smart_toy</span>
+</div>
+<div>
+<h1 class="font-bold text-lg leading-tight" id="sidebarBotName">Chatbot</h1>
+<p class="text-xs text-slate-500 dark:text-slate-400" id="sidebarBotDesc">AI Assistant</p>
+</div>
+</div>
+<button id="newChatBtn" class="w-full flex items-center justify-center gap-2 py-3 bg-primary hover:bg-primary/90 text-white rounded-xl font-semibold transition-all mb-4">
+<span class="material-symbols-outlined text-xl">add_circle</span>
+                    New Chat
+                </button>
+<button id="backToMarketBtn" class="w-full flex items-center justify-center gap-2 py-3 bg-slate-100 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-semibold transition-all border border-slate-200 dark:border-slate-700">
+<span class="material-symbols-outlined text-xl">storefront</span>
+                    Back to Marketplace
+                </button>
+</div>
+<!-- History List -->
+<div class="flex-1 overflow-y-auto px-4 custom-scrollbar">
+<div class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3 px-2">Recent History</div>
+<div class="space-y-1" id="historyList">
+</div>
+</div>
+<!-- Sidebar Footer -->
+<div class="p-4 border-t border-slate-200 dark:border-slate-800">
+<div class="flex items-center gap-3 px-2 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer transition-colors">
+<div class="size-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+<span class="material-symbols-outlined text-sm text-slate-500">person</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-semibold truncate">User</p>
+</div>
+<span class="material-symbols-outlined text-slate-400">settings</span>
+</div>
+</div>
+</aside>
+<!-- Main Chat Area -->
+<main class="flex-1 flex flex-col h-full bg-slate-50 dark:bg-background-dark/50 relative">
+<!-- Toolbar -->
+<header class="h-16 flex items-center justify-between px-8 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md sticky top-0 z-10">
+<div class="flex items-center gap-4">
+<h2 class="font-bold text-slate-900 dark:text-slate-100" id="headerBotName">Chatbot</h2>
+<select id="modelSelect" class="text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-slate-600 dark:text-slate-300 focus:ring-2 focus:ring-primary focus:border-transparent outline-none cursor-pointer">
+<option value="openai/gpt-4o-mini">GPT-4o Mini</option>
+<option value="openai/gpt-4o">GPT-4o</option>
+<option value="anthropic/claude-sonnet-4">Claude Sonnet 4</option>
+<option value="anthropic/claude-haiku-4">Claude Haiku 4</option>
+<option value="google/gemini-2.5-flash-preview">Gemini 2.5 Flash</option>
+<option value="google/gemini-2.5-pro-preview">Gemini 2.5 Pro</option>
+<option value="x-ai/grok-3-mini">Grok 3 Mini</option>
+</select>
+</div>
+<div class="flex items-center gap-2">
+<button id="settingsBtn" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-500 transition-colors" title="LLM Configuration">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-500 transition-colors">
+<span class="material-symbols-outlined">share</span>
+</button>
+<button class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-500 transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</header>
+<!-- Chat Messages -->
+<div class="flex-1 overflow-y-auto p-8 flex flex-col gap-8 custom-scrollbar" id="chatMessages">
+</div>
+<!-- Typing Indicator (hidden by default) -->
+<div id="typingIndicator" class="hidden px-8 pb-2">
+<div class="flex gap-4 max-w-4xl mx-auto w-full">
+<div class="size-10 rounded-xl bg-slate-200 dark:bg-slate-800 flex-shrink-0 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">smart_toy</span>
+</div>
+<div class="flex items-center gap-1 px-4 py-3">
+<div class="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style="animation-delay: 0ms;"></div>
+<div class="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style="animation-delay: 150ms;"></div>
+<div class="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style="animation-delay: 300ms;"></div>
+</div>
+</div>
+</div>
+<!-- Image Preview -->
+<div id="imagePreview" class="hidden px-8 max-w-4xl mx-auto w-full">
+<div class="relative inline-block mb-2">
+<img id="imagePreviewImg" class="max-h-32 rounded-xl border border-slate-200 dark:border-slate-700" src="" alt="Preview"/>
+<button id="removeImageBtn" class="absolute -top-2 -right-2 size-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+</div>
+</div>
+<!-- Input Area -->
+<div class="p-8 max-w-4xl mx-auto w-full sticky bottom-0 bg-gradient-to-t from-slate-50 dark:from-background-dark via-slate-50 dark:via-background-dark to-transparent pt-12">
+<div class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-2 group focus-within:ring-2 ring-primary/20 transition-all">
+<textarea id="messageInput" class="w-full bg-transparent border-none focus:ring-0 text-slate-700 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 resize-none py-3 px-4" placeholder="Type a message..." rows="1"></textarea>
+<div class="flex items-center justify-between px-2 pb-1">
+<div class="flex items-center gap-1">
+<button class="p-2 text-slate-400 hover:text-primary transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700" title="Attach file (coming soon)">
+<span class="material-symbols-outlined">attach_file</span>
+</button>
+<button id="imageBtn" class="p-2 text-slate-400 transition-colors rounded-lg disabled:opacity-30 disabled:cursor-not-allowed hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-700" title="Send image" disabled>
+<span class="material-symbols-outlined">photo_camera</span>
+</button>
+<input type="file" id="imageFileInput" accept="image/*" class="hidden"/>
+<button class="p-2 text-slate-400 hover:text-primary transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700" title="Voice input (coming soon)">
+<span class="material-symbols-outlined">mic</span>
+</button>
+</div>
+<button id="sendBtn" class="size-10 bg-primary text-white rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 hover:scale-105 transition-transform active:scale-95 disabled:opacity-50 disabled:hover:scale-100">
+<span class="material-symbols-outlined">send</span>
+</button>
+</div>
+</div>
+<p class="text-[10px] text-center text-slate-400 dark:text-slate-500 mt-4" id="disclaimerText">AI can make mistakes. Verify important information.</p>
+</div>
+</main>
+</div>
+
+<!-- LLM Config Modal -->
+<div id="configModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm">
+<div class="layout-content-container flex flex-col max-w-[960px] w-full mx-4 max-h-[90vh] bg-white dark:bg-slate-900/95 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden">
+<!-- Modal Header -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-slate-800 px-6 py-5">
+<div class="flex items-center gap-4">
+<div class="flex items-center justify-center size-10 rounded-lg bg-primary/10 text-primary">
+<span class="material-symbols-outlined">settings_input_component</span>
+</div>
+<div>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-[-0.015em]">LLM Configuration</h2>
+<p class="text-slate-500 dark:text-slate-400 text-xs">Fine-tune model behavior</p>
+</div>
+</div>
+<button id="configCloseBtn" class="flex size-10 cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-xl">close</span>
+</button>
+</header>
+<div class="p-6 md:p-10 space-y-8 overflow-y-auto custom-scrollbar">
+<!-- Model Input -->
+<div class="space-y-4">
+<h3 class="text-slate-900 dark:text-slate-100 text-md font-bold leading-tight tracking-[-0.015em] flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">hub</span> Model
+</h3>
+<input id="configModel" type="text" class="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600" placeholder="e.g. gpt-4, claude-3-sonnet"/>
+</div>
+<!-- Parameters Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<!-- Left Column: Sliders -->
+<div class="space-y-6">
+<h3 class="text-slate-900 dark:text-slate-100 text-md font-bold leading-tight tracking-[-0.015em] flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl">tune</span> Parameters
+</h3>
+<!-- Temperature Slider -->
+<div class="space-y-3">
+<div class="flex justify-between items-center">
+<label class="text-sm font-medium text-slate-700 dark:text-slate-300">Temperature</label>
+<span id="tempValue" class="text-xs font-bold px-2 py-1 bg-primary/10 text-primary rounded">0.7</span>
+</div>
+<input id="configTemp" class="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-primary" type="range" min="0" max="200" value="70"/>
+<p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">Controls randomness: Lowering results in less random completions. As the temperature approaches zero, the model will become deterministic.</p>
+</div>
+<!-- Max Tokens Slider -->
+<div class="space-y-3">
+<div class="flex justify-between items-center">
+<label class="text-sm font-medium text-slate-700 dark:text-slate-300">Max Output Tokens</label>
+<span id="tokensValue" class="text-xs font-bold px-2 py-1 bg-primary/10 text-primary rounded">2,048</span>
+</div>
+<input id="configTokens" class="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-primary" max="16384" min="1" type="range" value="2048"/>
+<p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">The maximum number of tokens to generate shared between prompt and completion.</p>
+</div>
+</div>
+<!-- Right Column: System Prompt -->
+<div class="space-y-6">
+<h3 class="text-slate-900 dark:text-slate-100 text-md font-bold leading-tight tracking-[-0.015em] flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl">terminal</span> System Prompt
+</h3>
+<div class="flex flex-col gap-3">
+<textarea id="configSystemPrompt" class="w-full p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600" placeholder="You are a helpful assistant..." rows="8"></textarea>
+<p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">The system message helps set the behavior of the assistant and provides context for the conversation.</p>
+</div>
+</div>
+</div>
+<!-- Streaming Toggle -->
+<div class="pt-4 border-t border-slate-200 dark:border-slate-800">
+<div class="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-slate-800/30">
+<div class="flex gap-3 items-center">
+<span class="material-symbols-outlined text-primary">history</span>
+<div>
+<p class="text-sm font-bold">Enable Streaming</p>
+<p class="text-xs text-slate-500">Tokens are sent as they are generated.</p>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input id="configStreaming" checked class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+</div>
+<!-- Modal Footer -->
+<div class="flex items-center justify-end gap-3 px-6 py-6 bg-slate-50 dark:bg-slate-900/80 border-t border-slate-200 dark:border-slate-800">
+<button id="configCancelBtn" class="px-6 py-2.5 rounded-lg text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
+                        Cancel
+                    </button>
+<button id="configSaveBtn" class="px-8 py-2.5 rounded-lg text-sm font-bold bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">save</span>
+                        Save Configuration
+                    </button>
+</div>
+</div>
+</div>
+
+<script>window.__API_BASE = "";</script>
+<script src="/static/js/api.js"></script>
+<script>
+(function() {
+    // --- State ---
+    var params = new URLSearchParams(window.location.search);
+    var domain = params.get('domain');
+    var sessionId = params.get('session_id') || null;
+    var chatbot = null;
+    var isStreaming = false;
+    var pendingImageBase64 = null;
+
+    // --- DOM refs ---
+    var chatMessages = document.getElementById('chatMessages');
+    var messageInput = document.getElementById('messageInput');
+    var sendBtn = document.getElementById('sendBtn');
+    var newChatBtn = document.getElementById('newChatBtn');
+    var backToMarketBtn = document.getElementById('backToMarketBtn');
+    var historyList = document.getElementById('historyList');
+    var typingIndicator = document.getElementById('typingIndicator');
+    var settingsBtn = document.getElementById('settingsBtn');
+    var configModal = document.getElementById('configModal');
+    var configCloseBtn = document.getElementById('configCloseBtn');
+    var configCancelBtn = document.getElementById('configCancelBtn');
+    var configSaveBtn = document.getElementById('configSaveBtn');
+    var configModel = document.getElementById('configModel');
+    var configTemp = document.getElementById('configTemp');
+    var tempValue = document.getElementById('tempValue');
+    var configTokens = document.getElementById('configTokens');
+    var tokensValue = document.getElementById('tokensValue');
+    var configSystemPrompt = document.getElementById('configSystemPrompt');
+    var configStreaming = document.getElementById('configStreaming');
+    var imageBtn = document.getElementById('imageBtn');
+    var imageFileInput = document.getElementById('imageFileInput');
+    var imagePreview = document.getElementById('imagePreview');
+    var imagePreviewImg = document.getElementById('imagePreviewImg');
+    var removeImageBtn = document.getElementById('removeImageBtn');
+    var modelSelect = document.getElementById('modelSelect');
+
+    // --- Init ---
+    async function init() {
+        if (!domain) {
+            window.location.href = 'index.html';
+            return;
+        }
+
+        // Enable image button only for movie domain
+        if (domain === 'movie') {
+            imageBtn.disabled = false;
+        }
+
+        // Load chatbot info
+        try {
+            chatbot = await api.getChatbot(domain);
+            applyChatbotInfo();
+        } catch (e) {
+            console.error('Failed to load chatbot info:', e);
+            chatbot = { name: domain, description: 'AI Assistant', icon: 'smart_toy' };
+            applyChatbotInfo();
+        }
+
+        // Load session if session_id provided
+        if (sessionId) {
+            await loadSession(sessionId);
+        }
+
+        // Load history
+        await loadHistory();
+    }
+
+    function applyChatbotInfo() {
+        var name = chatbot.name || domain;
+        var icon = chatbot.icon || 'smart_toy';
+        var desc = chatbot.description || 'AI Assistant';
+
+        document.getElementById('sidebarBotName').textContent = name;
+        document.getElementById('sidebarBotDesc').textContent = desc;
+        document.getElementById('sidebarBotIcon').textContent = icon;
+        document.getElementById('headerBotName').textContent = name;
+        messageInput.placeholder = 'Message ' + name + '...';
+        document.getElementById('disclaimerText').textContent = name + ' can make mistakes. Verify important information.';
+        document.title = name + ' - AI Chat';
+    }
+
+    // --- History ---
+    async function loadHistory() {
+        try {
+            var data = await api.getHistory(domain);
+            var sessions = data.sessions || data || [];
+            renderHistory(Array.isArray(sessions) ? sessions : []);
+        } catch (e) {
+            console.error('Failed to load history:', e);
+        }
+    }
+
+    function renderHistory(sessions) {
+        historyList.innerHTML = '';
+        sessions.forEach(function(s) {
+            var isActive = s.id === sessionId;
+            var div = document.createElement('div');
+            div.className = isActive
+                ? 'group flex items-center gap-3 px-3 py-3 rounded-xl bg-primary/10 border border-primary/20 text-primary cursor-pointer'
+                : 'group flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 cursor-pointer transition-colors';
+            var iconName = isActive ? 'chat_bubble' : 'history';
+            var titleText = escapeHtml(s.title || s.id || 'Untitled');
+            div.innerHTML = '<span class="material-symbols-outlined text-xl">' + iconName + '</span><span class="text-sm font-medium truncate flex-1">' + titleText + '</span>';
+            div.addEventListener('click', function() {
+                sessionId = s.id;
+                var url = new URL(window.location);
+                url.searchParams.set('session_id', sessionId);
+                window.history.pushState({}, '', url);
+                loadSession(sessionId);
+                loadHistory();
+            });
+            historyList.appendChild(div);
+        });
+    }
+
+    // --- Load Session Messages ---
+    async function loadSession(sid) {
+        try {
+            var data = await api.getSessionMessages(sid);
+            var messages = data.messages || data || [];
+            chatMessages.innerHTML = '';
+            messages.forEach(function(msg) {
+                if (msg.role === 'user') {
+                    appendUserMessage(msg.content);
+                } else if (msg.role === 'assistant') {
+                    appendBotMessage(msg.content, true);
+                }
+            });
+            scrollToBottom();
+        } catch (e) {
+            console.error('Failed to load session:', e);
+        }
+    }
+
+    // --- Message Rendering ---
+    function formatTime() {
+        return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    function renderMarkdown(text) {
+        var html = escapeHtml(text);
+        // Bold: **text** or __text__
+        html = html.replace(/\*\*(.+?)\*\*/g, '<strong class="text-primary">$1</strong>');
+        html = html.replace(/__(.+?)__/g, '<strong class="text-primary">$1</strong>');
+        // Italic: *text* or _text_
+        html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+        html = html.replace(/_(.+?)_/g, '<em>$1</em>');
+        // Unordered lists: lines starting with - or *
+        html = html.replace(/^[\-\*] (.+)$/gm, '<li>$1</li>');
+        html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul class="list-disc pl-5 space-y-2">$&</ul>');
+        // Ordered lists: lines starting with number.
+        html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+        // Paragraphs: double newlines
+        html = html.replace(/\n\n/g, '</p><p>');
+        // Single newlines to <br>
+        html = html.replace(/\n/g, '<br>');
+        // Wrap in paragraph
+        html = '<p>' + html + '</p>';
+        return html;
+    }
+
+    function appendUserMessage(content) {
+        var time = formatTime();
+        var div = document.createElement('div');
+        div.className = 'flex gap-4 max-w-4xl mx-auto w-full flex-row-reverse';
+        div.innerHTML = '<div class="size-10 rounded-xl bg-primary flex-shrink-0 flex items-center justify-center text-white"><span class="material-symbols-outlined">person</span></div><div class="flex flex-col gap-1.5 max-w-[85%] items-end"><div class="flex items-center gap-2"><span class="text-[10px] text-slate-400">' + time + '</span><span class="text-xs font-bold text-slate-500">Me</span></div><div class="bg-primary text-white p-4 rounded-2xl rounded-tr-none shadow-md leading-relaxed">' + escapeHtml(content) + '</div></div>';
+        chatMessages.appendChild(div);
+    }
+
+    function appendBotMessage(content, isFinal) {
+        var time = formatTime();
+        var botName = (chatbot && chatbot.name) || domain;
+        var botIcon = (chatbot && chatbot.icon) || 'smart_toy';
+        var div = document.createElement('div');
+        div.className = 'flex gap-4 max-w-4xl mx-auto w-full';
+
+        var contentHtml = isFinal ? renderMarkdown(content) : escapeHtml(content);
+        var actionsHtml = '';
+        if (isFinal) {
+            actionsHtml = '<div class="flex gap-2 mt-2"><button class="btn-helpful flex items-center gap-1 text-[10px] font-bold text-slate-400 hover:text-primary transition-colors"><span class="material-symbols-outlined text-sm">thumb_up</span> Helpful</button><button class="btn-copy flex items-center gap-1 text-[10px] font-bold text-slate-400 hover:text-slate-600 transition-colors"><span class="material-symbols-outlined text-sm">content_copy</span> Copy</button><button class="btn-regenerate flex items-center gap-1 text-[10px] font-bold text-slate-400 hover:text-slate-600 transition-colors"><span class="material-symbols-outlined text-sm">refresh</span> Regenerate</button></div>';
+        }
+
+        div.innerHTML = '<div class="size-10 rounded-xl bg-slate-200 dark:bg-slate-800 flex-shrink-0 flex items-center justify-center text-primary"><span class="material-symbols-outlined">' + escapeHtml(botIcon) + '</span></div><div class="flex flex-col gap-1.5 max-w-[85%]"><div class="flex items-center gap-2"><span class="text-xs font-bold text-slate-500">' + escapeHtml(botName) + '</span><span class="text-[10px] text-slate-400">' + time + '</span></div><div class="bot-message-content bg-white dark:bg-slate-800 p-4 rounded-2xl rounded-tl-none border border-slate-200 dark:border-slate-700 shadow-sm leading-relaxed">' + contentHtml + '</div>' + actionsHtml + '</div>';
+
+        if (isFinal) {
+            var copyBtn = div.querySelector('.btn-copy');
+            if (copyBtn) {
+                (function(btn, txt) {
+                    btn.addEventListener('click', function() {
+                        navigator.clipboard.writeText(txt).then(function() {
+                            btn.innerHTML = '<span class="material-symbols-outlined text-sm">check</span> Copied!';
+                            setTimeout(function() {
+                                btn.innerHTML = '<span class="material-symbols-outlined text-sm">content_copy</span> Copy';
+                            }, 2000);
+                        });
+                    });
+                })(copyBtn, content);
+            }
+        }
+
+        chatMessages.appendChild(div);
+        return div;
+    }
+
+    function createStreamingBotBubble() {
+        var time = formatTime();
+        var botName = (chatbot && chatbot.name) || domain;
+        var botIcon = (chatbot && chatbot.icon) || 'smart_toy';
+        var div = document.createElement('div');
+        div.className = 'flex gap-4 max-w-4xl mx-auto w-full';
+        div.innerHTML = '<div class="size-10 rounded-xl bg-slate-200 dark:bg-slate-800 flex-shrink-0 flex items-center justify-center text-primary"><span class="material-symbols-outlined">' + escapeHtml(botIcon) + '</span></div><div class="flex flex-col gap-1.5 max-w-[85%]"><div class="flex items-center gap-2"><span class="text-xs font-bold text-slate-500">' + escapeHtml(botName) + '</span><span class="text-[10px] text-slate-400">' + time + '</span></div><div class="bot-message-content bg-white dark:bg-slate-800 p-4 rounded-2xl rounded-tl-none border border-slate-200 dark:border-slate-700 shadow-sm leading-relaxed" data-streaming="true"></div></div>';
+        chatMessages.appendChild(div);
+        return div;
+    }
+
+    function finalizeStreamingBubble(bubbleDiv, fullText) {
+        var contentDiv = bubbleDiv.querySelector('[data-streaming="true"]');
+        if (contentDiv) {
+            contentDiv.innerHTML = renderMarkdown(fullText);
+            contentDiv.removeAttribute('data-streaming');
+        }
+        var colDiv = bubbleDiv.querySelector('.flex.flex-col');
+        var actionsDiv = document.createElement('div');
+        actionsDiv.className = 'flex gap-2 mt-2';
+        actionsDiv.innerHTML = '<button class="btn-helpful flex items-center gap-1 text-[10px] font-bold text-slate-400 hover:text-primary transition-colors"><span class="material-symbols-outlined text-sm">thumb_up</span> Helpful</button><button class="btn-copy flex items-center gap-1 text-[10px] font-bold text-slate-400 hover:text-slate-600 transition-colors"><span class="material-symbols-outlined text-sm">content_copy</span> Copy</button><button class="btn-regenerate flex items-center gap-1 text-[10px] font-bold text-slate-400 hover:text-slate-600 transition-colors"><span class="material-symbols-outlined text-sm">refresh</span> Regenerate</button>';
+        colDiv.appendChild(actionsDiv);
+
+        var copyBtn = actionsDiv.querySelector('.btn-copy');
+        (function(btn, txt) {
+            btn.addEventListener('click', function() {
+                navigator.clipboard.writeText(txt).then(function() {
+                    btn.innerHTML = '<span class="material-symbols-outlined text-sm">check</span> Copied!';
+                    setTimeout(function() {
+                        btn.innerHTML = '<span class="material-symbols-outlined text-sm">content_copy</span> Copy';
+                    }, 2000);
+                });
+            });
+        })(copyBtn, fullText);
+    }
+
+    function scrollToBottom() {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // --- Send Message ---
+    async function sendMessage() {
+        var text = messageInput.value.trim();
+        if (!text && !pendingImageBase64) return;
+        if (isStreaming) return;
+
+        var messageText = text || '(image)';
+        var imageData = pendingImageBase64;
+
+        messageInput.value = '';
+        messageInput.style.height = 'auto';
+        clearImagePreview();
+
+        appendUserMessage(messageText);
+        scrollToBottom();
+
+        isStreaming = true;
+        sendBtn.disabled = true;
+        typingIndicator.classList.remove('hidden');
+
+        var selectedModel = modelSelect.value;
+        var bubble = createStreamingBotBubble();
+        var contentDiv = bubble.querySelector('[data-streaming="true"]');
+        var fullText = '';
+
+        try {
+            var reader;
+            if (imageData) {
+                reader = await api.streamImageMessage(messageText, domain, imageData, sessionId, selectedModel);
+            } else {
+                reader = await api.streamMessage(messageText, domain, sessionId, selectedModel);
+            }
+
+            parseSSEStream(reader,
+                function onChunk(data) {
+                    if (data.session_id && !sessionId) {
+                        sessionId = data.session_id;
+                        var url = new URL(window.location);
+                        url.searchParams.set('session_id', sessionId);
+                        window.history.pushState({}, '', url);
+                    }
+                    if (data.content) {
+                        fullText += data.content;
+                        contentDiv.textContent = fullText;
+                        scrollToBottom();
+                    }
+                },
+                function onDone(data) {
+                    if (data.session_id && !sessionId) {
+                        sessionId = data.session_id;
+                        var url = new URL(window.location);
+                        url.searchParams.set('session_id', sessionId);
+                        window.history.pushState({}, '', url);
+                    }
+                    typingIndicator.classList.add('hidden');
+                    finalizeStreamingBubble(bubble, fullText);
+                    scrollToBottom();
+                    isStreaming = false;
+                    sendBtn.disabled = false;
+                    loadHistory();
+                }
+            );
+        } catch (e) {
+            console.error('Streaming error:', e);
+            typingIndicator.classList.add('hidden');
+            contentDiv.textContent = 'An error occurred. Please try again.';
+            isStreaming = false;
+            sendBtn.disabled = false;
+        }
+    }
+
+    // --- Image handling ---
+    imageBtn.addEventListener('click', function() {
+        if (!imageBtn.disabled) {
+            imageFileInput.click();
+        }
+    });
+
+    imageFileInput.addEventListener('change', function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            pendingImageBase64 = ev.target.result;
+            imagePreviewImg.src = pendingImageBase64;
+            imagePreview.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+        imageFileInput.value = '';
+    });
+
+    removeImageBtn.addEventListener('click', clearImagePreview);
+
+    function clearImagePreview() {
+        pendingImageBase64 = null;
+        imagePreviewImg.src = '';
+        imagePreview.classList.add('hidden');
+    }
+
+    // --- Auto-resize textarea ---
+    messageInput.addEventListener('input', function() {
+        messageInput.style.height = 'auto';
+        messageInput.style.height = messageInput.scrollHeight + 'px';
+    });
+
+    // --- Send on Enter (Shift+Enter for newline) ---
+    messageInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+
+    sendBtn.addEventListener('click', sendMessage);
+
+    // --- New Chat ---
+    newChatBtn.addEventListener('click', function() {
+        sessionId = null;
+        chatMessages.innerHTML = '';
+        messageInput.value = '';
+        clearImagePreview();
+        var url = new URL(window.location);
+        url.searchParams.delete('session_id');
+        window.history.pushState({}, '', url);
+        loadHistory();
+    });
+
+    // --- Back to Marketplace ---
+    backToMarketBtn.addEventListener('click', function() {
+        window.location.href = 'index.html';
+    });
+
+    // --- LLM Config Modal ---
+    settingsBtn.addEventListener('click', async function() {
+        configModal.classList.remove('hidden');
+        configModal.classList.add('flex');
+        try {
+            var config = await api.getConfig();
+            configModel.value = config.model || '';
+            var tempVal = config.temperature != null ? config.temperature : 0.7;
+            configTemp.value = Math.round(tempVal * 100);
+            tempValue.textContent = tempVal.toFixed(1);
+            var tokensVal = config.max_tokens || 2048;
+            configTokens.value = tokensVal;
+            tokensValue.textContent = Number(tokensVal).toLocaleString();
+            configSystemPrompt.value = config.system_prompt || '';
+            configStreaming.checked = config.stream !== false;
+        } catch (e) {
+            console.error('Failed to load config:', e);
+        }
+    });
+
+    function closeConfigModal() {
+        configModal.classList.add('hidden');
+        configModal.classList.remove('flex');
+    }
+
+    configCloseBtn.addEventListener('click', closeConfigModal);
+    configCancelBtn.addEventListener('click', closeConfigModal);
+    configModal.addEventListener('click', function(e) {
+        if (e.target === configModal) closeConfigModal();
+    });
+
+    configTemp.addEventListener('input', function() {
+        tempValue.textContent = (configTemp.value / 100).toFixed(1);
+    });
+
+    configTokens.addEventListener('input', function() {
+        tokensValue.textContent = Number(configTokens.value).toLocaleString();
+    });
+
+    configSaveBtn.addEventListener('click', async function() {
+        var config = {
+            model: configModel.value,
+            temperature: configTemp.value / 100,
+            max_tokens: parseInt(configTokens.value),
+            system_prompt: configSystemPrompt.value,
+            stream: configStreaming.checked,
+        };
+        try {
+            await api.updateConfig(config);
+            closeConfigModal();
+        } catch (e) {
+            console.error('Failed to save config:', e);
+            alert('Failed to save configuration.');
+        }
+    });
+
+    // --- Start ---
+    init();
+})();
+</script>
+</body></html>

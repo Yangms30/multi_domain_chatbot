@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>DEMO - AI Chatbot Marketplace</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#256af4",
+                        "background-light": "#f5f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+    <style>
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(37, 106, 244, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 selection:bg-primary/30">
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+
+<!-- Header / Navigation -->
+<header class="sticky top-0 z-50 glass border-b border-slate-200/10 px-6 py-4 lg:px-20">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-8">
+        <div class="flex items-center gap-10">
+            <div class="flex items-center gap-3 text-primary">
+                <span class="material-symbols-outlined text-3xl font-bold">grid_view</span>
+                <h2 class="text-slate-100 text-xl font-bold tracking-tight">DEMO</h2>
+            </div>
+            <nav class="hidden md:flex items-center gap-6">
+                <a class="text-primary text-sm font-semibold" href="/">Marketplace</a>
+                <a class="text-slate-400 hover:text-slate-100 text-sm font-medium transition-colors" href="/history.html">History</a>
+            </nav>
+        </div>
+        <div class="flex flex-1 items-center justify-end gap-6">
+            <div class="relative flex-1 max-w-md group">
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">search</span>
+                <input id="search-input" class="w-full h-10 bg-slate-800/50 border-slate-700 rounded-lg pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary focus:border-primary transition-all text-slate-100 placeholder:text-slate-500" placeholder="Search for domain experts..."/>
+            </div>
+            <button class="flex items-center justify-center p-2 rounded-lg bg-slate-800/50 text-slate-400 hover:text-slate-100 border border-slate-700 transition-all">
+                <span class="material-symbols-outlined">notifications</span>
+            </button>
+            <div class="h-10 w-10 rounded-full border-2 border-primary/30 p-0.5 overflow-hidden">
+                <img alt="User Profile" class="h-full w-full rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBvUCmnHBN8N7OysC-5Ewy9JbVEfQ2-FEZ0GgRXz6Gqshb5yCLlMxlrQ4FY1gYiWH70yrs5P51yI4LCZYElJOPhN2ql7t9VBx6HlWh1rEbHcYt4QLS3C1gRG3G890KbYWXbmukSIKMszsyJOw4Ozh5zkRNgzbCuqyrh6NKGkDPWs1mCvv_q8F6Woyvzs6kRiHzU0u1UTo_vR9Ci1l11Tgf2f8tqn_-OnLfE7oo8TgUTS5OQpLnoHVB_D6z-4YpIlHZ6zIcntSsHxD4"/>
+            </div>
+        </div>
+    </div>
+</header>
+
+<main class="flex-1 max-w-7xl mx-auto w-full px-6 py-10 lg:px-20">
+
+    <!-- Hero Section / Intro -->
+    <div class="mb-12">
+        <h1 class="text-4xl md:text-5xl font-bold text-slate-100 mb-4">Discover specialized<span class="text-primary"> Chatbot</span></h1>
+        <p class="text-slate-400 text-lg max-w-2xl">Find the perfect chatbot for your specific domain, from legal advice to technical troubleshooting and creative brainstorming.</p>
+    </div>
+
+    <!-- Category Pills -->
+    <div id="category-pills" class="flex gap-3 pb-8 overflow-x-auto no-scrollbar">
+        <button data-category="" class="category-pill active flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-white px-5 text-sm font-medium transition-all shadow-lg shadow-primary/20">
+            <span class="material-symbols-outlined text-sm">auto_awesome</span> All Experts
+        </button>
+        <button data-category="healthcare" class="category-pill flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-slate-800/50 text-slate-300 px-5 text-sm font-medium hover:bg-slate-700/50 transition-all border border-slate-700/50">
+            <span class="material-symbols-outlined text-sm">health_and_safety</span> Healthcare
+        </button>
+        <button data-category="movie" class="category-pill flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-slate-800/50 text-slate-300 px-5 text-sm font-medium hover:bg-slate-700/50 transition-all border border-slate-700/50">
+            <span class="material-symbols-outlined text-sm">movie</span> Movie
+        </button>
+    </div>
+
+    <!-- Marketplace Grid -->
+    <div id="chatbot-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <!-- Cards rendered dynamically by JavaScript -->
+    </div>
+
+    <!-- Latest Updates Section -->
+    <div class="mt-20 grid grid-cols-1 lg:grid-cols-3 gap-10">
+        <div class="lg:col-span-2">
+            <h2 class="text-2xl font-bold text-slate-100 mb-6 flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">new_releases</span> Latest Updates
+            </h2>
+            <div class="space-y-4">
+                <div class="glass p-4 rounded-xl flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="size-10 rounded bg-slate-800 flex items-center justify-center text-emerald-400">
+                            <span class="material-symbols-outlined">upgrade</span>
+                        </div>
+                        <div>
+                            <p class="text-slate-100 font-medium">Health Coach v1.0.0</p>
+                            <p class="text-slate-500 text-xs">Added personalized wellness tracking and nutrition advice.</p>
+                        </div>
+                    </div>
+                    <span class="text-xs text-slate-600 font-medium">2 hours ago</span>
+                </div>
+                <div class="glass p-4 rounded-xl flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="size-10 rounded bg-slate-800 flex items-center justify-center text-purple-400">
+                            <span class="material-symbols-outlined">add_task</span>
+                        </div>
+                        <div>
+                            <p class="text-slate-100 font-medium">Movie Expert v1.0.0</p>
+                            <p class="text-slate-500 text-xs">New personalized movie recommendation engine enabled.</p>
+                        </div>
+                    </div>
+                    <span class="text-xs text-slate-600 font-medium">5 hours ago</span>
+                </div>
+            </div>
+        </div>
+        <div class="glass p-8 rounded-2xl flex flex-col justify-center items-center text-center relative overflow-hidden group">
+            <div class="absolute -right-10 -top-10 size-40 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-all"></div>
+            <span class="material-symbols-outlined text-5xl text-primary mb-4">rocket_launch</span>
+            <h3 class="text-2xl font-bold text-slate-100 mb-2">Build Your Own</h3>
+            <p class="text-slate-400 text-sm mb-6">Want to create and list your own domain-specific expert? Start our developer journey today.</p>
+            <button class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-bold border border-slate-700 transition-all">
+                Open SDK Docs
+            </button>
+        </div>
+    </div>
+
+</main>
+
+<!-- Footer -->
+<footer class="mt-20 border-t border-slate-200/5 bg-slate-900/50 py-12 px-6 lg:px-20">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+        <div class="flex items-center gap-3 text-slate-400">
+            <span class="material-symbols-outlined text-2xl">grid_view</span>
+            <p class="text-sm font-medium">&copy; 2024 DEMO Marketplace. All rights reserved.</p>
+        </div>
+        <div class="flex items-center gap-8">
+            <a class="text-slate-500 hover:text-slate-300 text-sm transition-colors" href="#">Privacy Policy</a>
+            <a class="text-slate-500 hover:text-slate-300 text-sm transition-colors" href="#">Terms of Service</a>
+            <a class="text-slate-500 hover:text-slate-300 text-sm transition-colors" href="#">Contact</a>
+        </div>
+    </div>
+</footer>
+
+</div>
+
+<script>window.__API_BASE = "";</script>
+<script src="/static/js/api.js"></script>
+<script>
+(function () {
+    const DOMAIN_COLORS = {
+        healthcare: '#10b981',
+        movie: '#8b5cf6',
+    };
+
+    const grid = document.getElementById('chatbot-grid');
+    const searchInput = document.getElementById('search-input');
+    const categoryPills = document.querySelectorAll('.category-pill');
+
+    let allChatbots = [];
+    let activeCategory = '';
+
+    // ---- Render a single card ----
+    function renderCard(bot) {
+        const color = DOMAIN_COLORS[bot.domain] || '#256af4';
+        const icon = bot.icon || 'smart_toy';
+        const rating = bot.rating !== undefined ? bot.rating : '4.5';
+        const uses = bot.uses !== undefined ? bot.uses : '0';
+
+        return `
+            <div class="glass-card glass rounded-xl p-6 flex flex-col transition-all group">
+                <div class="mb-4 size-14 rounded-xl flex items-center justify-center"
+                     style="background: ${color}20; color: ${color};">
+                    <span class="material-symbols-outlined text-3xl">${icon}</span>
+                </div>
+                <div class="mb-6">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-xl font-bold text-slate-100">${bot.name}</h3>
+                        <span class="flex items-center gap-1 text-yellow-500 text-xs font-bold">
+                            <span class="material-symbols-outlined text-sm fill-1">star</span> ${rating}
+                        </span>
+                    </div>
+                    <p class="text-slate-400 text-sm leading-relaxed">${bot.description}</p>
+                </div>
+                <div class="mt-auto flex items-center justify-between gap-4">
+                    <div class="text-xs text-slate-500">
+                        <span class="block font-bold text-slate-300">${uses} uses</span>
+                    </div>
+                    <a href="chat.html?domain=${encodeURIComponent(bot.domain)}"
+                       class="px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-bold transition-all shadow-md shadow-primary/20 inline-block text-center">
+                        Select
+                    </a>
+                </div>
+            </div>`;
+    }
+
+    // ---- Render the full grid ----
+    function renderGrid(bots) {
+        if (bots.length === 0) {
+            grid.innerHTML = '<p class="text-slate-500 col-span-full text-center py-12">No chatbots found.</p>';
+            return;
+        }
+        grid.innerHTML = bots.map(renderCard).join('');
+    }
+
+    // ---- Filter displayed cards by search text ----
+    function filterBySearch() {
+        const query = searchInput.value.trim().toLowerCase();
+        if (!query) {
+            renderGrid(allChatbots);
+            return;
+        }
+        const filtered = allChatbots.filter(function (bot) {
+            return bot.name.toLowerCase().includes(query) ||
+                   bot.description.toLowerCase().includes(query) ||
+                   bot.domain.toLowerCase().includes(query);
+        });
+        renderGrid(filtered);
+    }
+
+    // ---- Fetch chatbots from API ----
+    function fetchChatbots(category) {
+        let url = '/api/chatbots';
+        if (category) {
+            url += '?category=' + encodeURIComponent(category);
+        }
+        fetch(url)
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+                allChatbots = Array.isArray(data) ? data : (data.chatbots || []);
+                filterBySearch();
+            })
+            .catch(function (err) {
+                console.error('Failed to load chatbots:', err);
+                grid.innerHTML = '<p class="text-red-400 col-span-full text-center py-12">Failed to load chatbots. Please try again later.</p>';
+            });
+    }
+
+    // ---- Category pill click handler ----
+    categoryPills.forEach(function (pill) {
+        pill.addEventListener('click', function () {
+            // Update active styles
+            categoryPills.forEach(function (p) {
+                p.classList.remove('bg-primary', 'text-white', 'shadow-lg', 'shadow-primary/20', 'active');
+                p.classList.add('bg-slate-800/50', 'text-slate-300', 'border', 'border-slate-700/50');
+            });
+            pill.classList.remove('bg-slate-800/50', 'text-slate-300', 'border', 'border-slate-700/50');
+            pill.classList.add('bg-primary', 'text-white', 'shadow-lg', 'shadow-primary/20', 'active');
+
+            activeCategory = pill.getAttribute('data-category');
+            fetchChatbots(activeCategory);
+        });
+    });
+
+    // ---- Search input handler ----
+    searchInput.addEventListener('input', filterBySearch);
+
+    // ---- Init ----
+    document.addEventListener('DOMContentLoaded', function () {
+        fetchChatbots('');
+    });
+})();
+</script>
+</body>
+</html>

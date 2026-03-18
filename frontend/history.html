@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DEMO - Chat History</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#256af4",
+                        "background-light": "#f5f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="flex h-screen overflow-hidden">
+<!-- Sidebar Navigation -->
+<aside class="w-64 border-r border-slate-200 dark:border-slate-800 flex flex-col bg-white dark:bg-background-dark/50">
+<div class="p-6 flex items-center gap-3">
+<div class="size-8 bg-primary rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined">auto_awesome</span>
+</div>
+<h1 class="text-xl font-bold tracking-tight">Nexus AI</h1>
+</div>
+<nav class="flex-1 px-4 space-y-2">
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors" href="index.html">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-sm font-medium">Marketplace</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 bg-primary/10 text-primary rounded-lg transition-colors" href="javascript:void(0)">
+<span class="material-symbols-outlined">history</span>
+<span class="text-sm font-medium">Chat History</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors" href="javascript:void(0)">
+<span class="material-symbols-outlined">star</span>
+<span class="text-sm font-medium">Favorites</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors" href="javascript:void(0)">
+<span class="material-symbols-outlined">archive</span>
+<span class="text-sm font-medium">Archived</span>
+</a>
+<div class="pt-4 pb-2 px-3">
+<p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">System</p>
+</div>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors" href="javascript:void(0)">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors" href="javascript:void(0)">
+<span class="material-symbols-outlined">help_outline</span>
+<span class="text-sm font-medium">Support</span>
+</a>
+</nav>
+<div class="p-4 border-t border-slate-200 dark:border-slate-800">
+<div class="flex items-center gap-3 px-2">
+<div class="size-10 rounded-full bg-primary/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">person</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-semibold truncate">User</p>
+<p class="text-xs text-slate-500 truncate">Free Plan</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-background-light dark:bg-background-dark">
+<!-- Header -->
+<header class="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-background-dark/50 backdrop-blur-md flex items-center justify-between px-8">
+<div class="flex items-center gap-4 flex-1">
+<div class="relative max-w-md w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+<input id="searchInput" class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary transition-all" placeholder="Search conversations..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<a href="index.html" class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-sm">add</span>
+                        New Chat
+                    </a>
+</div>
+</header>
+<!-- Content -->
+<div class="flex-1 overflow-y-auto p-8">
+<div class="max-w-6xl mx-auto space-y-6">
+<!-- Title and Filters -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h2 class="text-3xl font-bold tracking-tight">Chat History</h2>
+<p class="text-slate-500 dark:text-slate-400 mt-1">Review and manage your interaction records.</p>
+</div>
+<div id="domainFilters" class="flex items-center gap-3 overflow-x-auto pb-2 md:pb-0">
+<button data-domain="" class="filter-btn flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-white text-sm font-medium whitespace-nowrap">
+                                All Domains
+                            </button>
+<button data-domain="healthcare" class="filter-btn flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-medium whitespace-nowrap hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-sm">health_and_safety</span>
+                                Healthcare
+                            </button>
+<button data-domain="movie" class="filter-btn flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-medium whitespace-nowrap hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-sm">movie</span>
+                                Movie
+                            </button>
+</div>
+</div>
+<!-- History Table -->
+<div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Chatbot Name</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Last Message Snippet</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Date</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 text-right">Actions</th>
+</tr>
+</thead>
+<tbody id="historyTableBody" class="divide-y divide-slate-100 dark:divide-slate-800">
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div id="paginationContainer" class="px-6 py-4 flex items-center justify-between border-t border-slate-200 dark:border-slate-800">
+<p id="paginationInfo" class="text-sm text-slate-500 dark:text-slate-400">Loading...</p>
+<div id="paginationButtons" class="flex items-center gap-1"></div>
+</div>
+</div>
+<!-- Usage Stats Section -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+<div class="bg-primary/5 dark:bg-primary/10 p-6 rounded-xl border border-primary/10">
+<p class="text-xs font-bold text-primary uppercase tracking-wider">Total Chats</p>
+<h3 id="statTotalChats" class="text-2xl font-bold mt-1">--</h3>
+</div>
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800">
+<p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Active This Month</p>
+<h3 id="statActiveMonth" class="text-2xl font-bold mt-1">--</h3>
+</div>
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800">
+<p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Messages</p>
+<h3 id="statTotalMessages" class="text-2xl font-bold mt-1">--</h3>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+<script>window.__API_BASE = "";</script>
+<script src="/static/js/api.js"></script>
+<script>
+(function() {
+    let currentDomain = '';
+    let currentPage = 1;
+    let allRows = [];
+    const perPage = 10;
+
+    const searchInput = document.getElementById('searchInput');
+    const tableBody = document.getElementById('historyTableBody');
+    const paginationInfo = document.getElementById('paginationInfo');
+    const paginationButtons = document.getElementById('paginationButtons');
+    const filterButtons = document.querySelectorAll('.filter-btn');
+
+    const domainConfig = {
+        healthcare: { name: 'Health Coach', icon: 'health_and_safety', bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-600 dark:text-emerald-400' },
+        movie: { name: 'Movie Expert', icon: 'movie', bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-600 dark:text-purple-400' },
+    };
+
+    function getDomainInfo(domain) {
+        return domainConfig[domain] || { name: domain || 'Assistant', icon: 'smart_toy', bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-600 dark:text-slate-400' };
+    }
+
+    function formatDate(str) {
+        if (!str) return '';
+        const d = new Date(str);
+        return isNaN(d) ? str : d.toLocaleDateString('ko-KR', { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+
+    function escapeHtml(s) {
+        const d = document.createElement('div');
+        d.textContent = s || '';
+        return d.innerHTML;
+    }
+
+    function renderRows(rows) {
+        tableBody.innerHTML = '';
+        if (!rows.length) {
+            tableBody.innerHTML = '<tr><td colspan="4" class="px-6 py-12 text-center text-slate-500">No conversations found.</td></tr>';
+            return;
+        }
+        rows.forEach(item => {
+            const info = getDomainInfo(item.domain);
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group cursor-pointer';
+            tr.innerHTML = `
+                <td class="px-6 py-4">
+                    <div class="flex items-center gap-3">
+                        <div class="size-8 rounded-lg ${info.bg} flex items-center justify-center ${info.text}">
+                            <span class="material-symbols-outlined">${info.icon}</span>
+                        </div>
+                        <span class="font-medium">${escapeHtml(info.name)}</span>
+                    </div>
+                </td>
+                <td class="px-6 py-4">
+                    <p class="text-sm text-slate-500 dark:text-slate-400 truncate max-w-xs">${escapeHtml((item.last_message || '').slice(0, 80))}</p>
+                </td>
+                <td class="px-6 py-4">
+                    <span class="text-sm text-slate-500 dark:text-slate-400">${formatDate(item.updated_at || item.created_at)}</span>
+                </td>
+                <td class="px-6 py-4 text-right">
+                    <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button class="action-delete p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors text-slate-500 hover:text-red-600" title="Delete">
+                            <span class="material-symbols-outlined text-xl">delete</span>
+                        </button>
+                    </div>
+                </td>`;
+
+            tr.addEventListener('click', e => {
+                if (e.target.closest('.action-delete')) return;
+                window.location.href = `chat.html?domain=${item.domain}&session_id=${item.id}`;
+            });
+            tr.querySelector('.action-delete').addEventListener('click', async e => {
+                e.stopPropagation();
+                if (!confirm('Delete this conversation?')) return;
+                await api.deleteSession(item.id);
+                loadHistory();
+                loadStats();
+            });
+            tableBody.appendChild(tr);
+        });
+    }
+
+    function renderPagination(total) {
+        const totalPages = Math.max(1, Math.ceil(total / perPage));
+        const start = total === 0 ? 0 : (currentPage - 1) * perPage + 1;
+        const end = Math.min(currentPage * perPage, total);
+        paginationInfo.textContent = total === 0 ? 'No results' : `Showing ${start} to ${end} of ${total} results`;
+
+        paginationButtons.innerHTML = '';
+        if (totalPages <= 1) return;
+
+        for (let i = 1; i <= totalPages; i++) {
+            const btn = document.createElement('button');
+            btn.textContent = i;
+            btn.className = i === currentPage
+                ? 'w-8 h-8 rounded bg-primary text-white text-sm font-bold flex items-center justify-center'
+                : 'w-8 h-8 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-medium transition-colors';
+            btn.onclick = () => { currentPage = i; loadHistory(); };
+            paginationButtons.appendChild(btn);
+        }
+    }
+
+    async function loadHistory() {
+        try {
+            const data = await api.getHistory(currentDomain || null, currentPage);
+            allRows = Array.isArray(data) ? data : [];
+            const filtered = filterBySearch(allRows);
+            renderRows(filtered);
+            renderPagination(filtered.length);
+        } catch (err) {
+            tableBody.innerHTML = '<tr><td colspan="4" class="px-6 py-12 text-center text-red-500">Failed to load history.</td></tr>';
+        }
+    }
+
+    function filterBySearch(rows) {
+        const q = searchInput.value.trim().toLowerCase();
+        if (!q) return rows;
+        return rows.filter(item => {
+            const info = getDomainInfo(item.domain);
+            return info.name.toLowerCase().includes(q) || (item.last_message || '').toLowerCase().includes(q) || (item.title || '').toLowerCase().includes(q);
+        });
+    }
+
+    async function loadStats() {
+        try {
+            const stats = await api.getStats();
+            document.getElementById('statTotalChats').textContent = (stats.total_chats || 0).toLocaleString();
+            document.getElementById('statActiveMonth').textContent = (stats.active_this_month || 0).toLocaleString();
+            document.getElementById('statTotalMessages').textContent = (stats.total_messages || 0).toLocaleString();
+        } catch (e) {}
+    }
+
+    filterButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            filterButtons.forEach(b => {
+                b.className = b === btn
+                    ? 'filter-btn flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-white text-sm font-medium whitespace-nowrap'
+                    : 'filter-btn flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-medium whitespace-nowrap hover:border-primary transition-colors';
+            });
+            currentDomain = btn.dataset.domain || '';
+            currentPage = 1;
+            loadHistory();
+        });
+    });
+
+    let searchTimer;
+    searchInput.addEventListener('input', () => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => {
+            const filtered = filterBySearch(allRows);
+            renderRows(filtered);
+            renderPagination(filtered.length);
+        }, 300);
+    });
+
+    loadHistory();
+    loadStats();
+})();
+</script>
+</body></html>

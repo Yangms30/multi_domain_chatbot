@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ChatBot Marketplace - Find Your AI Match</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#256af4",
+                        "background-light": "#f5f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(37, 106, 244, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 selection:bg-primary/30">
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+<!-- Header / Navigation -->
+<header class="sticky top-0 z-50 glass border-b border-slate-200/10 px-6 py-4 lg:px-20">
+<div class="max-w-7xl mx-auto flex items-center justify-between gap-8">
+<div class="flex items-center gap-10">
+<div class="flex items-center gap-3 text-primary">
+<span class="material-symbols-outlined text-3xl font-bold">grid_view</span>
+<h2 class="text-slate-100 text-xl font-bold tracking-tight">BotNexus</h2>
+</div>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-primary text-sm font-semibold" href="#">Marketplace</a>
+<a class="text-slate-400 hover:text-slate-100 text-sm font-medium transition-colors" href="#">Popular</a>
+<a class="text-slate-400 hover:text-slate-100 text-sm font-medium transition-colors" href="#">Enterprise</a>
+<a class="text-slate-400 hover:text-slate-100 text-sm font-medium transition-colors" href="#">Community</a>
+</nav>
+</div>
+<div class="flex flex-1 items-center justify-end gap-6">
+<div class="relative flex-1 max-w-md group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">search</span>
+<input class="w-full h-10 bg-slate-800/50 border-slate-700 rounded-lg pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary focus:border-primary transition-all text-slate-100 placeholder:text-slate-500" placeholder="Search for domain experts..."/>
+</div>
+<button class="flex items-center justify-center p-2 rounded-lg bg-slate-800/50 text-slate-400 hover:text-slate-100 border border-slate-700 transition-all">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="h-10 w-10 rounded-full border-2 border-primary/30 p-0.5 overflow-hidden">
+<img alt="User Profile" class="h-full w-full rounded-full object-cover" data-alt="User profile avatar with abstract colors" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBvUCmnHBN8N7OysC-5Ewy9JbVEfQ2-FEZ0GgRXz6Gqshb5yCLlMxlrQ4FY1gYiWH70yrs5P51yI4LCZYElJOPhN2ql7t9VBx6HlWh1rEbHcYt4QLS3C1gRG3G890KbYWXbmukSIKMszsyJOw4Ozh5zkRNgzbCuqyrh6NKGkDPWs1mCvv_q8F6Woyvzs6kRiHzU0u1UTo_vR9Ci1l11Tgf2f8tqn_-OnLfE7oo8TgUTS5OQpLnoHVB_D6z-4YpIlHZ6zIcntSsHxD4"/>
+</div>
+</div>
+</div>
+</header>
+<main class="flex-1 max-w-7xl mx-auto w-full px-6 py-10 lg:px-20">
+<!-- Hero Section / Intro -->
+<div class="mb-12">
+<h1 class="text-4xl md:text-5xl font-bold text-slate-100 mb-4">Discover specialized AI <span class="text-primary">agents.</span></h1>
+<p class="text-slate-400 text-lg max-w-2xl">Find the perfect chatbot for your specific domain, from legal advice to technical troubleshooting and creative brainstorming.</p>
+</div>
+<!-- Category Pills -->
+<div class="flex gap-3 pb-8 overflow-x-auto no-scrollbar">
+<button class="flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-white px-5 text-sm font-medium transition-all shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-sm">auto_awesome</span> All Experts
+                </button>
+<button class="flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-slate-800/50 text-slate-300 px-5 text-sm font-medium hover:bg-slate-700/50 transition-all border border-slate-700/50">
+<span class="material-symbols-outlined text-sm">code</span> Technology
+                </button>
+<button class="flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-slate-800/50 text-slate-300 px-5 text-sm font-medium hover:bg-slate-700/50 transition-all border border-slate-700/50">
+<span class="material-symbols-outlined text-sm">brush</span> Creative
+                </button>
+<button class="flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-slate-800/50 text-slate-300 px-5 text-sm font-medium hover:bg-slate-700/50 transition-all border border-slate-700/50">
+<span class="material-symbols-outlined text-sm">gavel</span> Legal
+                </button>
+<button class="flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-slate-800/50 text-slate-300 px-5 text-sm font-medium hover:bg-slate-700/50 transition-all border border-slate-700/50">
+<span class="material-symbols-outlined text-sm">fitness_center</span> Fitness
+                </button>
+<button class="flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-slate-800/50 text-slate-300 px-5 text-sm font-medium hover:bg-slate-700/50 transition-all border border-slate-700/50">
+<span class="material-symbols-outlined text-sm">school</span> Education
+                </button>
+<button class="flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-slate-800/50 text-slate-300 px-5 text-sm font-medium hover:bg-slate-700/50 transition-all border border-slate-700/50">
+<span class="material-symbols-outlined text-sm">theater_comedy</span> Entertainment
+                </button>
+</div>
+<!-- Marketplace Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+<!-- Card 1: Tech Guru -->
+<div class="glass-card glass rounded-xl p-6 flex flex-col transition-all group">
+<div class="mb-4 size-14 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-3xl">terminal</span>
+</div>
+<div class="mb-6">
+<div class="flex items-center justify-between mb-2">
+<h3 class="text-xl font-bold text-slate-100">Tech Guru</h3>
+<span class="flex items-center gap-1 text-yellow-500 text-xs font-bold">
+<span class="material-symbols-outlined text-sm fill-1">star</span> 4.9
+                            </span>
+</div>
+<p class="text-slate-400 text-sm leading-relaxed">Expert assistant for systems architecture, debugging code, and hardware specifications.</p>
+</div>
+<div class="mt-auto flex items-center justify-between gap-4">
+<div class="text-xs text-slate-500">
+<span class="block font-bold text-slate-300">2.1k uses</span>
+<span>v3.4.2</span>
+</div>
+<button class="px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-bold transition-all shadow-md shadow-primary/20">
+                            Select
+                        </button>
+</div>
+</div>
+<!-- Card 2: Creative Muse -->
+<div class="glass-card glass rounded-xl p-6 flex flex-col transition-all group">
+<div class="mb-4 size-14 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400">
+<span class="material-symbols-outlined text-3xl">palette</span>
+</div>
+<div class="mb-6">
+<div class="flex items-center justify-between mb-2">
+<h3 class="text-xl font-bold text-slate-100">Creative Muse</h3>
+<span class="flex items-center gap-1 text-yellow-500 text-xs font-bold">
+<span class="material-symbols-outlined text-sm fill-1">star</span> 4.8
+                            </span>
+</div>
+<p class="text-slate-400 text-sm leading-relaxed">Brainstorming partner for visual arts, storytelling, and conceptual design workflows.</p>
+</div>
+<div class="mt-auto flex items-center justify-between gap-4">
+<div class="text-xs text-slate-500">
+<span class="block font-bold text-slate-300">1.5k uses</span>
+<span>v1.2.0</span>
+</div>
+<button class="px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-bold transition-all shadow-md shadow-primary/20">
+                            Select
+                        </button>
+</div>
+</div>
+<!-- Card 3: Legal Eagle -->
+<div class="glass-card glass rounded-xl p-6 flex flex-col transition-all group">
+<div class="mb-4 size-14 rounded-xl bg-orange-500/20 flex items-center justify-center text-orange-400">
+<span class="material-symbols-outlined text-3xl">balance</span>
+</div>
+<div class="mb-6">
+<div class="flex items-center justify-between mb-2">
+<h3 class="text-xl font-bold text-slate-100">Legal Eagle</h3>
+<span class="flex items-center gap-1 text-yellow-500 text-xs font-bold">
+<span class="material-symbols-outlined text-sm fill-1">star</span> 4.7
+                            </span>
+</div>
+<p class="text-slate-400 text-sm leading-relaxed">Specialized in contract review, regulatory research, and standard legal document drafting.</p>
+</div>
+<div class="mt-auto flex items-center justify-between gap-4">
+<div class="text-xs text-slate-500">
+<span class="block font-bold text-slate-300">840 uses</span>
+<span>v2.0.1</span>
+</div>
+<button class="px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-bold transition-all shadow-md shadow-primary/20">
+                            Select
+                        </button>
+</div>
+</div>
+<!-- Card 4: Fitness Coach -->
+<div class="glass-card glass rounded-xl p-6 flex flex-col transition-all group">
+<div class="mb-4 size-14 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400">
+<span class="material-symbols-outlined text-3xl">exercise</span>
+</div>
+<div class="mb-6">
+<div class="flex items-center justify-between mb-2">
+<h3 class="text-xl font-bold text-slate-100">Fitness Coach</h3>
+<span class="flex items-center gap-1 text-yellow-500 text-xs font-bold">
+<span class="material-symbols-outlined text-sm fill-1">star</span> 4.6
+                            </span>
+</div>
+<p class="text-slate-400 text-sm leading-relaxed">Customized workout regimes, nutritional tracking, and health performance analytics.</p>
+</div>
+<div class="mt-auto flex items-center justify-between gap-4">
+<div class="text-xs text-slate-500">
+<span class="block font-bold text-slate-300">3.2k uses</span>
+<span>v4.1.0</span>
+</div>
+<button class="px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-bold transition-all shadow-md shadow-primary/20">
+                            Select
+                        </button>
+</div>
+</div>
+<!-- Card 5: Linguist Pro -->
+<div class="glass-card glass rounded-xl p-6 flex flex-col transition-all group">
+<div class="mb-4 size-14 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400">
+<span class="material-symbols-outlined text-3xl">language</span>
+</div>
+<div class="mb-6">
+<div class="flex items-center justify-between mb-2">
+<h3 class="text-xl font-bold text-slate-100">Linguist Pro</h3>
+<span class="flex items-center gap-1 text-yellow-500 text-xs font-bold">
+<span class="material-symbols-outlined text-sm fill-1">star</span> 4.9
+                            </span>
+</div>
+<p class="text-slate-400 text-sm leading-relaxed">Real-time translation, localized content editing, and deep linguistic analysis.</p>
+</div>
+<div class="mt-auto flex items-center justify-between gap-4">
+<div class="text-xs text-slate-500">
+<span class="block font-bold text-slate-300">5.4k uses</span>
+<span>v5.2.1</span>
+</div>
+<button class="px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-bold transition-all shadow-md shadow-primary/20">
+                            Select
+                        </button>
+</div>
+</div>
+<!-- Card 6: Marketing Maven -->
+<div class="glass-card glass rounded-xl p-6 flex flex-col transition-all group">
+<div class="mb-4 size-14 rounded-xl bg-pink-500/20 flex items-center justify-center text-pink-400">
+<span class="material-symbols-outlined text-3xl">trending_up</span>
+</div>
+<div class="mb-6">
+<div class="flex items-center justify-between mb-2">
+<h3 class="text-xl font-bold text-slate-100">Marketing Maven</h3>
+<span class="flex items-center gap-1 text-yellow-500 text-xs font-bold">
+<span class="material-symbols-outlined text-sm fill-1">star</span> 4.7
+                            </span>
+</div>
+<p class="text-slate-400 text-sm leading-relaxed">Ad copy generation, market trend analysis, and social media campaign planning.</p>
+</div>
+<div class="mt-auto flex items-center justify-between gap-4">
+<div class="text-xs text-slate-500">
+<span class="block font-bold text-slate-300">1.9k uses</span>
+<span>v1.8.4</span>
+</div>
+<button class="px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-bold transition-all shadow-md shadow-primary/20">
+                            Select
+                        </button>
+</div>
+</div>
+<!-- Card 7: Data Wizard -->
+<div class="glass-card glass rounded-xl p-6 flex flex-col transition-all group">
+<div class="mb-4 size-14 rounded-xl bg-cyan-500/20 flex items-center justify-center text-cyan-400">
+<span class="material-symbols-outlined text-3xl">query_stats</span>
+</div>
+<div class="mb-6">
+<div class="flex items-center justify-between mb-2">
+<h3 class="text-xl font-bold text-slate-100">Data Wizard</h3>
+<span class="flex items-center gap-1 text-yellow-500 text-xs font-bold">
+<span class="material-symbols-outlined text-sm fill-1">star</span> 4.8
+                            </span>
+</div>
+<p class="text-slate-400 text-sm leading-relaxed">Complex dataset analysis, pattern recognition, and predictive modeling visualization.</p>
+</div>
+<div class="mt-auto flex items-center justify-between gap-4">
+<div class="text-xs text-slate-500">
+<span class="block font-bold text-slate-300">2.7k uses</span>
+<span>v3.1.0</span>
+</div>
+<button class="px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-bold transition-all shadow-md shadow-primary/20">
+                            Select
+                        </button>
+</div>
+</div>
+<!-- Card 8: Chef Assist -->
+<div class="glass-card glass rounded-xl p-6 flex flex-col transition-all group">
+<div class="mb-4 size-14 rounded-xl bg-yellow-500/20 flex items-center justify-center text-yellow-400">
+<span class="material-symbols-outlined text-3xl">restaurant</span>
+</div>
+<div class="mb-6">
+<div class="flex items-center justify-between mb-2">
+<h3 class="text-xl font-bold text-slate-100">Chef Assist</h3>
+<span class="flex items-center gap-1 text-yellow-500 text-xs font-bold">
+<span class="material-symbols-outlined text-sm fill-1">star</span> 4.5
+                            </span>
+</div>
+<p class="text-slate-400 text-sm leading-relaxed">Recipe modification for dietary needs, pantry inventory optimization, and cooking timers.</p>
+</div>
+<div class="mt-auto flex items-center justify-between gap-4">
+<div class="text-xs text-slate-500">
+<span class="block font-bold text-slate-300">4.1k uses</span>
+<span>v2.2.0</span>
+</div>
+<button class="px-6 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-bold transition-all shadow-md shadow-primary/20">
+                            Select
+                        </button>
+</div>
+</div>
+</div>
+<!-- Trending Sidebar/Section (Hidden on mobile for clarity) -->
+<div class="mt-20 grid grid-cols-1 lg:grid-cols-3 gap-10">
+<div class="lg:col-span-2">
+<h2 class="text-2xl font-bold text-slate-100 mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">new_releases</span> Latest Updates
+                    </h2>
+<div class="space-y-4">
+<div class="glass p-4 rounded-xl flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="size-10 rounded bg-slate-800 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">upgrade</span>
+</div>
+<div>
+<p class="text-slate-100 font-medium">Tech Guru v3.4.2</p>
+<p class="text-slate-500 text-xs">Added support for Rust and Go concurrency patterns.</p>
+</div>
+</div>
+<span class="text-xs text-slate-600 font-medium">2 hours ago</span>
+</div>
+<div class="glass p-4 rounded-xl flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="size-10 rounded bg-slate-800 flex items-center justify-center text-purple-400">
+<span class="material-symbols-outlined">add_task</span>
+</div>
+<div>
+<p class="text-slate-100 font-medium">Creative Muse v1.2.0</p>
+<p class="text-slate-500 text-xs">New collaborative storytelling mode enabled.</p>
+</div>
+</div>
+<span class="text-xs text-slate-600 font-medium">5 hours ago</span>
+</div>
+</div>
+</div>
+<div class="glass p-8 rounded-2xl flex flex-col justify-center items-center text-center relative overflow-hidden group">
+<div class="absolute -right-10 -top-10 size-40 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-all"></div>
+<span class="material-symbols-outlined text-5xl text-primary mb-4">rocket_launch</span>
+<h3 class="text-2xl font-bold text-slate-100 mb-2">Build Your Own</h3>
+<p class="text-slate-400 text-sm mb-6">Want to create and list your own domain-specific expert? Start our developer journey today.</p>
+<button class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-bold border border-slate-700 transition-all">
+                        Open SDK Docs
+                    </button>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="mt-20 border-t border-slate-200/5 bg-slate-900/50 py-12 px-6 lg:px-20">
+<div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+<div class="flex items-center gap-3 text-slate-400">
+<span class="material-symbols-outlined text-2xl">grid_view</span>
+<p class="text-sm font-medium">© 2024 BotNexus Marketplace. All rights reserved.</p>
+</div>
+<div class="flex items-center gap-8">
+<a class="text-slate-500 hover:text-slate-300 text-sm transition-colors" href="#">Privacy Policy</a>
+<a class="text-slate-500 hover:text-slate-300 text-sm transition-colors" href="#">Terms of Service</a>
+<a class="text-slate-500 hover:text-slate-300 text-sm transition-colors" href="#">Contact</a>
+</div>
+</div>
+</footer>
+</div>
+</body></html>

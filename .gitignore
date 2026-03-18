@@ -1,0 +1,26 @@
+# Backend
+backend/.env
+backend/__pycache__/
+backend/**/__pycache__/
+*.pyc
+chatbot.db
+venv/
+
+# Frontend
+.vercel/
+node_modules/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# bkit
+.bkit/
+
+# Claude
+.claude/
