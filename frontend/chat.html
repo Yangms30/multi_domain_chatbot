@@ -427,7 +427,7 @@
             chatMessages.innerHTML = '';
             messages.forEach(function(msg) {
                 if (msg.role === 'user') {
-                    appendUserMessage(msg.content);
+                    appendUserMessage(msg.content, msg.image_data || null);
                 } else if (msg.role === 'assistant') {
                     appendBotMessage(msg.content, true);
                 }
@@ -471,11 +471,15 @@
         return html;
     }
 
-    function appendUserMessage(content) {
+    function appendUserMessage(content, imageDataUrl) {
         var time = formatTime();
+        var imageHtml = '';
+        if (imageDataUrl) {
+            imageHtml = '<img src="' + imageDataUrl + '" class="max-w-[240px] max-h-[180px] rounded-xl border border-white/20 mb-2 cursor-pointer hover:opacity-90 transition-opacity" onclick="window.open(this.src)" alt="Sent image"/>';
+        }
         var div = document.createElement('div');
         div.className = 'flex gap-4 max-w-4xl mx-auto w-full flex-row-reverse';
-        div.innerHTML = '<div class="size-10 rounded-xl bg-primary flex-shrink-0 flex items-center justify-center text-white"><span class="material-symbols-outlined">person</span></div><div class="flex flex-col gap-1.5 max-w-[85%] items-end"><div class="flex items-center gap-2"><span class="text-[10px] text-slate-400">' + time + '</span><span class="text-xs font-bold text-slate-500">Me</span></div><div class="bg-primary text-white p-4 rounded-2xl rounded-tr-none shadow-md leading-relaxed">' + escapeHtml(content) + '</div></div>';
+        div.innerHTML = '<div class="size-10 rounded-xl bg-primary flex-shrink-0 flex items-center justify-center text-white"><span class="material-symbols-outlined">person</span></div><div class="flex flex-col gap-1.5 max-w-[85%] items-end"><div class="flex items-center gap-2"><span class="text-[10px] text-slate-400">' + time + '</span><span class="text-xs font-bold text-slate-500">Me</span></div><div class="bg-primary text-white p-4 rounded-2xl rounded-tr-none shadow-md leading-relaxed">' + imageHtml + escapeHtml(content) + '</div></div>';
         chatMessages.appendChild(div);
     }
 
@@ -636,7 +640,7 @@
         var welcomeEl = document.getElementById('welcomeContainer');
         if (welcomeEl) welcomeEl.remove();
 
-        appendUserMessage(messageText);
+        appendUserMessage(messageText, imageData || null);
         scrollToBottom();
 
         isStreaming = true;
