@@ -89,7 +89,7 @@ const api = {
 };
 
 // SSE stream parser utility
-function parseSSEStream(reader, onChunk, onDone) {
+function parseSSEStream(reader, onChunk, onDone, onError) {
     const decoder = new TextDecoder();
     let buffer = '';
 
@@ -101,7 +101,9 @@ function parseSSEStream(reader, onChunk, onDone) {
             if (line.startsWith('data: ')) {
                 try {
                     const data = JSON.parse(line.slice(6));
-                    if (data.done) {
+                    if (data.error) {
+                        if (onError) onError(data.error);
+                    } else if (data.done) {
                         onDone(data);
                     } else if (data.content) {
                         onChunk(data);

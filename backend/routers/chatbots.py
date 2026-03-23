@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from models.schemas import ChatbotInfo
 from services.domain_manager import get_all_chatbots, get_chatbot
 
@@ -12,4 +12,7 @@ async def list_chatbots(category: str = "all"):
 
 @router.get("/api/chatbots/{domain}", response_model=ChatbotInfo)
 async def get_chatbot_info(domain: str):
-    return get_chatbot(domain)
+    bot = get_chatbot(domain)
+    if bot is None:
+        raise HTTPException(status_code=404, detail=f"Domain not found: {domain}")
+    return bot

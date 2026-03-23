@@ -1,5 +1,3 @@
-from fastapi import HTTPException
-
 DOMAIN_CHATBOTS = {
     "healthcare": {
         "domain": "healthcare",
@@ -58,14 +56,14 @@ def get_all_chatbots(category: str = "all") -> list[dict]:
     return []
 
 
-def get_chatbot(domain: str) -> dict:
+def get_chatbot(domain: str) -> dict | None:
     if domain not in DOMAIN_CHATBOTS:
-        raise HTTPException(status_code=404, detail=f"Domain not found: {domain}")
+        return None
     bot = DOMAIN_CHATBOTS[domain]
     return {k: v for k, v in bot.items() if k != "system_prompt"}
 
 
 def get_system_prompt(domain: str) -> str:
     if domain not in DOMAIN_CHATBOTS:
-        raise HTTPException(status_code=404, detail=f"Domain not found: {domain}")
+        return ""
     return DOMAIN_CHATBOTS[domain]["system_prompt"]

@@ -6,18 +6,18 @@ from typing import Optional
 # --- Request Schemas ---
 
 class ChatRequest(BaseModel):
-    message: str
-    domain: str
+    message: str = Field(..., min_length=1, max_length=10000)
+    domain: str = Field(..., min_length=1, max_length=50)
     session_id: Optional[str] = None
     stream: bool = True
     model: Optional[str] = None
 
 
 class ChatImageRequest(BaseModel):
-    message: str
-    domain: str = "movie"
+    message: str = Field(..., min_length=1, max_length=10000)
+    domain: str = Field("movie", min_length=1, max_length=50)
     session_id: Optional[str] = None
-    image_data: str
+    image_data: str = Field(..., max_length=10_000_000)  # ~7.5MB base64
     stream: bool = True
     model: Optional[str] = None
 

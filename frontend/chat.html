@@ -529,16 +529,27 @@
         return div;
     }
 
-    function finalizeStreamingBubble(bubbleDiv, fullText) {
+    function finalizeStreamingBubble(bubbleDiv, fullText, source, funcName) {
         var contentDiv = bubbleDiv.querySelector('[data-streaming="true"]');
         if (contentDiv) {
             contentDiv.innerHTML = renderMarkdown(fullText);
             contentDiv.removeAttribute('data-streaming');
         }
         var colDiv = bubbleDiv.querySelector('.flex.flex-col');
+
+        // Source badge with function name
+        var sourceBadge = '';
+        if (source === 'rule') {
+            var label = funcName ? funcName : 'Instant Answer';
+            sourceBadge = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"><span class="material-symbols-outlined text-xs">bolt</span>' + escapeHtml(label) + '</span>';
+        } else {
+            var modelName = modelSelect.options[modelSelect.selectedIndex].text;
+            sourceBadge = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400"><span class="material-symbols-outlined text-xs">psychology</span>' + escapeHtml(modelName) + '</span>';
+        }
+
         var actionsDiv = document.createElement('div');
-        actionsDiv.className = 'flex gap-2 mt-2';
-        actionsDiv.innerHTML = '<button class="btn-helpful flex items-center gap-1 text-[10px] font-bold text-slate-400 hover:text-primary transition-colors"><span class="material-symbols-outlined text-sm">thumb_up</span> Helpful</button><button class="btn-copy flex items-center gap-1 text-[10px] font-bold text-slate-400 hover:text-slate-600 transition-colors"><span class="material-symbols-outlined text-sm">content_copy</span> Copy</button><button class="btn-regenerate flex items-center gap-1 text-[10px] font-bold text-slate-400 hover:text-slate-600 transition-colors"><span class="material-symbols-outlined text-sm">refresh</span> Regenerate</button>';
+        actionsDiv.className = 'flex items-center gap-2 mt-2 flex-wrap';
+        actionsDiv.innerHTML = sourceBadge + '<button class="btn-helpful flex items-center gap-1 text-[10px] font-bold text-slate-400 hover:text-primary transition-colors"><span class="material-symbols-outlined text-sm">thumb_up</span> Helpful</button><button class="btn-copy flex items-center gap-1 text-[10px] font-bold text-slate-400 hover:text-slate-600 transition-colors"><span class="material-symbols-outlined text-sm">content_copy</span> Copy</button><button class="btn-regenerate flex items-center gap-1 text-[10px] font-bold text-slate-400 hover:text-slate-600 transition-colors"><span class="material-symbols-outlined text-sm">refresh</span> Regenerate</button>';
         colDiv.appendChild(actionsDiv);
 
         var copyBtn = actionsDiv.querySelector('.btn-copy');
@@ -671,6 +682,8 @@
         var bubble = createStreamingBotBubble();
         var contentDiv = bubble.querySelector('[data-streaming="true"]');
         var fullText = '';
+        var responseSource = 'llm';
+        var responseFunction = '';
 
         try {
             var reader;
@@ -688,6 +701,12 @@
                         url.searchParams.set('session_id', sessionId);
                         window.history.pushState({}, '', url);
                     }
+                    if (data.source) {
+                        responseSource = data.source;
+                    }
+                    if (data['function']) {
+                        responseFunction = data['function'];
+                    }
                     if (data.content) {
                         fullText += data.content;
                         contentDiv.textContent = fullText;
@@ -702,7 +721,7 @@
                         window.history.pushState({}, '', url);
                     }
                     typingIndicator.classList.add('hidden');
-                    finalizeStreamingBubble(bubble, fullText);
+                    finalizeStreamingBubble(bubble, fullText, responseSource, responseFunction);
                     scrollToBottom();
                     isStreaming = false;
                     sendBtn.disabled = false;

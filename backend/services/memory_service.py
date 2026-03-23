@@ -11,7 +11,11 @@ Memory types:
   - interaction: Key conversation summaries
 """
 
+import logging
+
 from models.database import get_db
+
+logger = logging.getLogger(__name__)
 
 
 class MemoryService:
@@ -165,5 +169,5 @@ Rules:
                         content=item["content"],
                         importance=item.get("importance", 5),
                     )
-        except Exception:
-            pass  # Memory extraction is best-effort
+        except Exception as e:
+            logger.debug("Memory extraction skipped: %s", e)

@@ -1,5 +1,8 @@
+import logging
 import os
 from supabase import create_client, Client
+
+logger = logging.getLogger(__name__)
 
 _supabase: Client | None = None
 
@@ -19,14 +22,15 @@ async def init_db():
     # Quick connectivity check
     try:
         db.table("llm_config").select("id").limit(1).execute()
-    except Exception:
-        pass  # Tables may not exist yet; user needs to run migration SQL
+        logger.info("Supabase connection verified")
+    except Exception as e:
+        logger.warning("Supabase connectivity check failed: %s", e)
 
     # Check context_summary column exists (migration)
     try:
         db.table("chat_sessions").select("context_summary").limit(1).execute()
-    except Exception:
-        pass  # Column doesn't exist yet; user needs to run migration SQL
+    except Exception as e:
+        logger.warning("context_summary column not found: %s", e)
 
     # Ensure default config exists
     try:
@@ -40,8 +44,9 @@ async def init_db():
                 "system_prompt": "",
                 "stream": True,
             }).execute()
-    except Exception:
-        pass
+            logger.info("Default LLM config created")
+    except Exception as e:
+        logger.warning("Failed to ensure default config: %s", e)
 
 
 async def close_db():
