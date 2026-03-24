@@ -70,7 +70,36 @@ COMMENT ON TABLE agent_memory IS 'Per-user, per-domain agent memory for self-imp
 COMMENT ON COLUMN agent_memory.memory_type IS 'preference | context | feedback | goal | interaction';
 COMMENT ON COLUMN agent_memory.importance IS '1-10 scale, higher = more important to recall';
 
--- 5. Insert default config
+-- 5. Domain Knowledge (for rule-based responses without LLM)
+-- Generic table for all domains: movie, healthcare, construction, etc.
+CREATE TABLE IF NOT EXISTS domain_knowledge (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    domain TEXT NOT NULL,
+    external_id TEXT NOT NULL,
+    category TEXT NOT NULL,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL DEFAULT '',
+    data JSONB NOT NULL DEFAULT '{}',
+    tags TEXT[] NOT NULL DEFAULT '{}',
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(domain, external_id)
+);
+
+CREATE INDEX idx_knowledge_domain ON domain_knowledge(domain);
+CREATE INDEX idx_knowledge_category ON domain_knowledge(domain, category);
+CREATE INDEX idx_knowledge_tags ON domain_knowledge USING GIN(tags);
+CREATE INDEX idx_knowledge_title ON domain_knowledge USING GIN(to_tsvector('simple', title));
+CREATE INDEX idx_knowledge_content ON domain_knowledge USING GIN(to_tsvector('simple', content));
+CREATE INDEX idx_knowledge_data ON domain_knowledge USING GIN(data);
+
+COMMENT ON TABLE domain_knowledge IS 'Domain-specific knowledge base for rule-based responses without LLM';
+COMMENT ON COLUMN domain_knowledge.external_id IS 'Unique ID from source (e.g., tmdb_123, wiki_456)';
+COMMENT ON COLUMN domain_knowledge.category IS 'Type within domain (e.g., movie, genre, actor for movie domain)';
+COMMENT ON COLUMN domain_knowledge.data IS 'Flexible JSONB for domain-specific structured data';
+COMMENT ON COLUMN domain_knowledge.tags IS 'Searchable tags array for keyword matching';
+
+-- 6. Insert default config
 INSERT INTO llm_config (id, model, temperature, max_tokens, system_prompt, stream)
 VALUES (1, 'openai/gpt-4o-mini', 0.7, 2048, '', true)
 ON CONFLICT (id) DO NOTHING;

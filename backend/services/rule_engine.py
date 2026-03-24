@@ -1,9 +1,11 @@
 """
-Rule-based response engine for healthcare chatbot.
+Rule-based response engine for multi-domain chatbot.
 Handles simple queries without LLM calls to save cost and reduce latency.
 """
 
 import re
+
+from services.knowledge_query import KnowledgeQuery
 
 
 class RuleEngine:
@@ -11,12 +13,18 @@ class RuleEngine:
 
     def __init__(self):
         self._faq_database = self._build_faq_database()
+        self._knowledge = KnowledgeQuery()
 
     def try_respond(self, message: str, domain: str) -> tuple[str, str] | None:
         """
         Try to generate a rule-based response.
         Returns (response, function_name) tuple if handled, None if LLM should handle it.
         """
+        # Try DB knowledge query first (works for any domain with data)
+        kb_result = self._knowledge.try_respond(message, domain)
+        if kb_result:
+            return kb_result
+
         if domain != "healthcare":
             return None
 
