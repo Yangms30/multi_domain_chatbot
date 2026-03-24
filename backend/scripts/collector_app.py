@@ -193,7 +193,7 @@ def detect_openrouter() -> dict | None:
         return {
             "provider": "openrouter",
             "api_key": api_key,
-            "models": ["openai/gpt-4o-mini", "openai/gpt-4.1-mini", "google/gemini-2.5-flash"],
+            "models": ["openai/gpt-4o-mini", "openai/gpt-4.1-mini", "google/gemini-2.5-flash",'qwen/qwen-3.5-72b-instruct'],
         }
     return None
 
