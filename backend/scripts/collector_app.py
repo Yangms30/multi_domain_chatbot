@@ -15,24 +15,102 @@ import os
 import re
 import sys
 import time
+from datetime import datetime
 
 import httpx
 import streamlit as st
 from dotenv import load_dotenv
 from supabase import create_client
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 load_dotenv()
 
 try:
-    from scripts.web_scraper import WebScraper
+    from web_scraper import WebScraper
     HAS_SCRAPER = True
 except ImportError:
-    HAS_SCRAPER = False
-
-from scripts.auto_collector import DOMAIN_SCHEMAS
+    try:
+        from scripts.web_scraper import WebScraper
+        HAS_SCRAPER = True
+    except ImportError:
+        HAS_SCRAPER = False
 
 OLLAMA_BASE = "http://localhost:11434"
+
+# ── Domain Schemas (self-contained, no external import) ──────────
+
+DOMAIN_SCHEMAS = {
+    "movie": {
+        "category": "movie",
+        "build_tags": lambda data: (
+            data.get("genres", [])
+            + [data.get("director", "")]
+            + [c.get("name", "") for c in data.get("cast", [])[:5]]
+            + [data.get("original_language", "")]
+        ),
+        "build_content": lambda data: (
+            f"{data.get('title', '')} ({data.get('release_date', '')[:4] if data.get('release_date') else '미정'})\n"
+            f"감독: {data.get('director', '')}\n"
+            f"출연: {', '.join(c.get('name', '') for c in data.get('cast', [])[:5])}\n"
+            f"장르: {', '.join(data.get('genres', []))}\n"
+            f"평점: {data.get('vote_average', 0)}/10\n"
+            f"줄거리: {data.get('overview', '')}"
+        ),
+    },
+    "drama": {
+        "category": "drama",
+        "build_tags": lambda data: (
+            data.get("genres", [])
+            + [data.get("director", "")]
+            + [data.get("writer", "")]
+            + [c.get("name", "") for c in data.get("cast", [])[:5]]
+            + [data.get("network", "")]
+            + [data.get("original_language", "")]
+        ),
+        "build_content": lambda data: (
+            f"{data.get('title', '')} ({data.get('air_date', '')[:4] if data.get('air_date') else '미정'})\n"
+            f"연출: {data.get('director', '')}\n"
+            f"작가: {data.get('writer', '')}\n"
+            f"출연: {', '.join(c.get('name', '') for c in data.get('cast', [])[:5])}\n"
+            f"장르: {', '.join(data.get('genres', []))}\n"
+            f"방송사: {data.get('network', '')}\n"
+            f"평점: {data.get('vote_average', 0)}/10\n"
+            f"줄거리: {data.get('overview', '')}"
+        ),
+    },
+    "healthcare": {
+        "category": "condition",
+        "build_tags": lambda data: (
+            [data.get("field", "")]
+            + data.get("symptoms", [])[:3]
+            + [data.get("severity", "")]
+        ),
+        "build_content": lambda data: (
+            f"{data.get('name', '')}\n"
+            f"진료과: {data.get('field', '')}\n"
+            f"증상: {', '.join(data.get('symptoms', []))}\n"
+            f"원인: {', '.join(data.get('causes', []))}\n"
+            f"치료: {', '.join(data.get('treatments', []))}\n"
+            f"설명: {data.get('description', '')}"
+        ),
+    },
+    "construction": {
+        "category": "item",
+        "build_tags": lambda data: (
+            [data.get("type", "")]
+            + data.get("usage", [])[:3]
+            + [data.get("cost_level", "")]
+        ),
+        "build_content": lambda data: (
+            f"{data.get('name', '')}\n"
+            f"분류: {data.get('type', '')}\n"
+            f"용도: {', '.join(data.get('usage', []))}\n"
+            f"규격: {', '.join(data.get('specifications', []))}\n"
+            f"설명: {data.get('description', '')}"
+        ),
+    },
+}
 OPENROUTER_BASE = "https://openrouter.ai/api/v1"
 
 DOMAIN_LABELS = {"movie": "영화", "drama": "드라마", "healthcare": "헬스케어", "construction": "건설"}
@@ -716,7 +794,135 @@ with st.sidebar:
 
 # ── Tabs ─────────────────────────────────────────────────────────
 
-tab_collect, tab_browse, tab_manage = st.tabs(["📥 데이터 수집", "🔍 데이터 조회", "🗑️ 데이터 관리"])
+tab_kobis, tab_collect, tab_browse, tab_manage = st.tabs(["🎬 KOBIS 영화 수집", "📥 LLM 수집", "🔍 데이터 조회", "🗑️ 데이터 관리"])
+
+# ── Tab 0: KOBIS ─────────────────────────────────────────────────
+
+with tab_kobis:
+    st.subheader("🎬 KOBIS 영화 수집")
+
+    kobis_key = os.environ.get("KOBIS_API_KEY")
+    if kobis_key:
+        st.success(f"🟢 KOBIS API 연결됨 — 영화진흥위원회 공식 데이터 (무료, LLM 불필요)")
+    else:
+        st.error("🔴 KOBIS_API_KEY가 .env에 없습니다. https://kobis.or.kr/kobisopenapi 에서 발급하세요.")
+
+    st.info("KOBIS(영화진흥위원회) + 네이버 크롤링으로 **실제 영화 데이터**를 수집합니다.\n\n"
+            "- 감독, 배우, 장르 → KOBIS 공식 API\n"
+            "- 줄거리, 평점 → 네이버 크롤링\n"
+            "- LLM 비용 **0원**, 가짜 영화 **0개**")
+
+    kobis_mode = st.selectbox("수집 모드", [
+        "monthly", "weekly", "search", "infinite"
+    ], format_func=lambda x: {
+        "monthly": "📊 월별 박스오피스 TOP 10 (최근 N개월)",
+        "weekly": "📅 주간 박스오피스 (최근 N주)",
+        "search": "🔍 연도별 전체 영화",
+        "infinite": "♾️ 무한 수집 (월별 박스오피스 + 전 연도)",
+    }[x], key="kobis_mode")
+
+    kcol1, kcol2 = st.columns(2)
+    with kcol1:
+        if kobis_mode == "monthly":
+            kobis_months = st.slider("수집 기간 (개월)", 1, 120, 12, 1, key="kobis_months")
+        elif kobis_mode == "weekly":
+            kobis_weeks = st.slider("수집 기간 (주)", 4, 208, 52, 4, key="kobis_weeks")
+        elif kobis_mode == "search":
+            current_year = datetime.now().year
+            kobis_year = st.selectbox("연도", range(current_year, 1989, -1), key="kobis_year")
+    with kcol2:
+        st.caption("**예상 수집량**")
+        if kobis_mode == "monthly":
+            st.write(f"~{min(kobis_months * 10, kobis_months * 8)}편 (월 TOP 10, 중복 제거)")
+        elif kobis_mode == "weekly":
+            st.write(f"~{kobis_weeks * 5}편 (주 TOP 10, 중복 제거)")
+        elif kobis_mode == "search":
+            st.write("해당 연도 개봉 전체 영화")
+        elif kobis_mode == "infinite":
+            st.write("1990~현재 전체 영화 (수천편)")
+
+    st.divider()
+
+    kcol_start, kcol_stop = st.columns(2)
+    with kcol_start:
+        kobis_start = st.button("🚀 KOBIS 수집 시작", type="primary",
+                                disabled=not kobis_key, use_container_width=True)
+    with kcol_stop:
+        if st.session_state.get("kobis_running"):
+            if st.button("⏹️ 수집 중지", key="kobis_stop", use_container_width=True):
+                st.session_state.kobis_running = False
+                st.rerun()
+
+    if kobis_start and kobis_key:
+        st.session_state.kobis_running = True
+
+        try:
+            from kobis_collector import KobisCollector
+        except ImportError:
+            from scripts.kobis_collector import KobisCollector
+
+        progress_bar = st.progress(0, text="KOBIS 수집 시작...")
+        status_area = st.empty()
+        live_stats = st.empty()
+        log_area = st.container()
+        sidebar_ph = st.session_state.get("sidebar_counts")
+
+        collector = KobisCollector()
+        start_time = time.time()
+
+        # Monkey-patch stats display into collector
+        original_process = collector._process_movie
+
+        processed_count = {"n": 0, "success": 0}
+
+        def _patched_process(movie_cd, movie_name):
+            if not st.session_state.get("kobis_running"):
+                return
+            original_process(movie_cd, movie_name)
+            processed_count["n"] += 1
+            processed_count["success"] = collector.stats["success"]
+            elapsed = time.time() - start_time
+
+            # Update progress display
+            status_area.info(f"🎬 수집 중: {movie_name}")
+            with live_stats.container():
+                st.write(f"### 🎬 KOBIS 수집 현황 — ⏱️ {_format_elapsed(elapsed)}")
+                c1, c2, c3, c4 = st.columns(4)
+                c1.metric("✅ 성공", collector.stats["success"])
+                c2.metric("⏭️ 스킵", collector.stats["skipped"])
+                c3.metric("❌ 실패", collector.stats["errors"])
+                c4.metric("📊 전체", collector.stats["total"])
+                if elapsed > 0 and collector.stats["success"] > 0:
+                    speed = collector.stats["success"] / (elapsed / 60)
+                    st.caption(f"속도: {speed:.1f}편/분")
+
+            _update_sidebar_counts(sidebar_ph, db)
+
+        collector._process_movie = _patched_process
+
+        try:
+            if kobis_mode == "monthly":
+                collector.collect_monthly_boxoffice(months=kobis_months)
+            elif kobis_mode == "weekly":
+                collector.collect_weekly_boxoffice(weeks=kobis_weeks)
+            elif kobis_mode == "search":
+                collector.collect_by_year(year=kobis_year)
+            elif kobis_mode == "infinite":
+                collector.collect_infinite()
+        except Exception as e:
+            st.error(f"수집 중 오류: {e}")
+
+        elapsed = time.time() - start_time
+        progress_bar.progress(1.0, f"완료! ⏱️ {_format_elapsed(elapsed)}")
+        status_area.success(
+            f"KOBIS 수집 완료! 성공: {collector.stats['success']}편, "
+            f"스킵: {collector.stats['skipped']}편, "
+            f"소요 시간: {_format_elapsed(elapsed)}"
+        )
+        collector.close()
+        st.session_state.kobis_running = False
+        st.balloons()
+
 
 # ── Tab 1: Collect ───────────────────────────────────────────────
 

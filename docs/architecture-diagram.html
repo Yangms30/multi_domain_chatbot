@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Healthcare Chatbot - Architecture Diagram</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 40px 20px;
+        }
+        h1 {
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 8px;
+            color: #f1f5f9;
+        }
+        .subtitle {
+            text-align: center;
+            color: #94a3b8;
+            margin-bottom: 40px;
+            font-size: 14px;
+        }
+        .diagram-section {
+            max-width: 1100px;
+            margin: 0 auto 60px;
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 32px;
+            border: 1px solid #334155;
+        }
+        .diagram-section h2 {
+            font-size: 20px;
+            margin-bottom: 24px;
+            color: #f1f5f9;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .mermaid {
+            display: flex;
+            justify-content: center;
+        }
+        .legend {
+            max-width: 1100px;
+            margin: 0 auto 40px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .legend-card {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #334155;
+        }
+        .legend-card h3 {
+            font-size: 15px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .legend-card ul { list-style: none; }
+        .legend-card li {
+            padding: 6px 0;
+            font-size: 13px;
+            color: #cbd5e1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .badge-rule { background: #064e3b; color: #6ee7b7; }
+        .badge-llm { background: #4c1d95; color: #c4b5fd; }
+        .badge-data { background: #1e3a5f; color: #7dd3fc; }
+        .trigger { color: #94a3b8; font-size: 12px; font-family: monospace; }
+    </style>
+</head>
+<body>
+
+<h1>Healthcare Chatbot Architecture</h1>
+<p class="subtitle">Rule-Based + LLM Hybrid Response System</p>
+
+<!-- Diagram 1: Overall Message Flow -->
+<div class="diagram-section">
+    <h2>1. Message Flow (Overall)</h2>
+    <pre class="mermaid">
+flowchart TD
+    User([User Message]) --> FE[Frontend chat.html]
+    FE -->|POST /api/chat/stream| Router[chat.py Router]
+    Router --> CS[ChatService.stream_chat]
+    CS --> Save1[(Save user msg to Supabase)]
+    Save1 --> RE{RuleEngine.try_respond}
+
+    RE -->|Match| RuleResp["Return (response, function_name)"]
+    RE -->|None| LLM[OpenRouter LLM API]
+
+    RuleResp --> SSE1["SSE: source='rule', function='BMI 계산기'"]
+    LLM --> SSE2["SSE: source='llm'"]
+
+    SSE1 --> Save2[(Save assistant msg)]
+    SSE2 --> Save2
+    SSE2 --> Memory[Memory Extraction via LLM]
+    Memory --> Summary[Context Summary Update]
+
+    Save2 --> Badge{Frontend Badge Display}
+    Badge -->|rule| GreenBadge["⚡ BMI 계산기"]
+    Badge -->|llm| PurpleBadge["🧠 GPT-4o-mini"]
+
+    style RE fill:#059669,stroke:#34d399,color:#fff
+    style LLM fill:#7c3aed,stroke:#a78bfa,color:#fff
+    style GreenBadge fill:#064e3b,stroke:#6ee7b7,color:#6ee7b7
+    style PurpleBadge fill:#4c1d95,stroke:#c4b5fd,color:#c4b5fd
+    style Save1 fill:#1e3a5f,stroke:#7dd3fc,color:#7dd3fc
+    style Save2 fill:#1e3a5f,stroke:#7dd3fc,color:#7dd3fc
+    </pre>
+</div>
+
+<!-- Diagram 2: Rule Engine Internal -->
+<div class="diagram-section">
+    <h2>2. RuleEngine Internal Flow</h2>
+    <pre class="mermaid">
+flowchart TD
+    Input["message + domain"] --> DomainCheck{"domain == 'healthcare'?"}
+    DomainCheck -->|No| ReturnNone1[Return None → LLM]
+    DomainCheck -->|Yes| Lower["message.lower()"]
+
+    Lower --> F1{"_try_bmi()"}
+    F1 -->|"'bmi' or '체질량' in msg"| BMI["⚡ BMI 계산기"]
+    F1 -->|No match| F2{"_try_calorie()"}
+
+    F2 -->|"'칼로리','열량','kcal' in msg\n+ food found in DB"| CAL["⚡ 칼로리 조회"]
+    F2 -->|No match| F3{"_try_faq()"}
+
+    F3 -->|"keyword score > 0"| FAQ["⚡ 건강 FAQ"]
+    F3 -->|No match| F4{"_try_greeting()"}
+
+    F4 -->|"msg < 15 chars\n+ greeting word"| GREET["⚡ 인사말"]
+    F4 -->|No match| ReturnNone2[Return None → LLM]
+
+    BMI --> Result["Return (response, function_name)"]
+    CAL --> Result
+    FAQ --> Result
+    GREET --> Result
+
+    style DomainCheck fill:#334155,stroke:#94a3b8,color:#f1f5f9
+    style F1 fill:#065f46,stroke:#34d399,color:#fff
+    style F2 fill:#065f46,stroke:#34d399,color:#fff
+    style F3 fill:#065f46,stroke:#34d399,color:#fff
+    style F4 fill:#065f46,stroke:#34d399,color:#fff
+    style BMI fill:#059669,stroke:#6ee7b7,color:#fff
+    style CAL fill:#059669,stroke:#6ee7b7,color:#fff
+    style FAQ fill:#059669,stroke:#6ee7b7,color:#fff
+    style GREET fill:#059669,stroke:#6ee7b7,color:#fff
+    style ReturnNone1 fill:#7c3aed,stroke:#a78bfa,color:#fff
+    style ReturnNone2 fill:#7c3aed,stroke:#a78bfa,color:#fff
+    style Result fill:#064e3b,stroke:#6ee7b7,color:#6ee7b7
+    </pre>
+</div>
+
+<!-- Diagram 3: Function Detail -->
+<div class="diagram-section">
+    <h2>3. Function Detail Map</h2>
+    <pre class="mermaid">
+flowchart LR
+    subgraph RuleEngine["RuleEngine (rule_engine.py)"]
+        direction TB
+
+        subgraph BMI["_try_bmi() → BMI 계산기"]
+            BMI_T["Triggers: 'bmi', '체질량'"]
+            BMI_E["Extract: cm/kg markers → fallback"]
+            BMI_C["Compute: weight / height²"]
+            BMI_R["판정: 저체중/정상/과체중/비만"]
+            BMI_T --> BMI_E --> BMI_C --> BMI_R
+        end
+
+        subgraph CAL["_try_calorie() → 칼로리 조회"]
+            CAL_T["Triggers: '칼로리', '열량', 'kcal'"]
+            CAL_D["DB: 25 foods with kcal"]
+            CAL_M["Match: longest-first, no overlap"]
+            CAL_T --> CAL_D --> CAL_M
+        end
+
+        subgraph FAQ["_try_faq() → 건강 FAQ"]
+            FAQ_T["Triggers: keyword scoring"]
+            FAQ1["간헐적 단식 (16:8, 5:2)"]
+            FAQ2["물 섭취량 (1.5~2L/day)"]
+            FAQ3["스트레칭 루틴 (10min)"]
+            FAQ4["수면 시간 (7-9hrs)"]
+            FAQ5["단백질 권장량 (0.8-2.2g/kg)"]
+            FAQ6["기초대사량 BMR"]
+            FAQ_T --> FAQ1 & FAQ2 & FAQ3 & FAQ4 & FAQ5 & FAQ6
+        end
+
+        subgraph GREET["_try_greeting() → 인사말"]
+            GREET_T["Triggers: msg < 15 chars"]
+            GREET_W["'안녕','하이','hello','hi'"]
+            GREET_T --> GREET_W
+        end
+    end
+
+    subgraph LLM["OpenRouter LLM"]
+        LLM_M["GPT-4o-mini / GPT-5 / Claude / etc."]
+        LLM_C["Context: system prompt + memory + history"]
+    end
+
+    RuleEngine -->|"None (no match)"| LLM
+
+    style BMI fill:#064e3b,stroke:#34d399,color:#d1fae5
+    style CAL fill:#064e3b,stroke:#34d399,color:#d1fae5
+    style FAQ fill:#064e3b,stroke:#34d399,color:#d1fae5
+    style GREET fill:#064e3b,stroke:#34d399,color:#d1fae5
+    style LLM fill:#4c1d95,stroke:#a78bfa,color:#ede9fe
+    </pre>
+</div>
+
+<!-- Legend Cards -->
+<div class="legend">
+    <div class="legend-card">
+        <h3><span class="badge badge-rule">RULE</span> Rule-Based Functions (4)</h3>
+        <ul>
+            <li><strong>BMI 계산기</strong> — 키/몸무게로 BMI 계산 + 판정</li>
+            <li class="trigger">"bmi", "체질량" + cm/kg 숫자</li>
+            <li><strong>칼로리 조회</strong> — 25개 음식 DB에서 즉시 조회</li>
+            <li class="trigger">"칼로리", "열량", "kcal" + 음식 이름</li>
+            <li><strong>건강 FAQ</strong> — 6개 주제 사전 답변</li>
+            <li class="trigger">"간헐적단식", "물 섭취량", "스트레칭", "수면", "단백질", "기초대사량"</li>
+            <li><strong>인사말</strong> — 짧은 인사 자동 응답</li>
+            <li class="trigger">"안녕", "하이", "hello", "hi" (15자 이내)</li>
+        </ul>
+    </div>
+    <div class="legend-card">
+        <h3><span class="badge badge-llm">LLM</span> LLM Fallback</h3>
+        <ul>
+            <li><strong>조건</strong> — Rule Engine이 None 반환 시</li>
+            <li><strong>모델</strong> — OpenRouter (GPT-4o-mini 기본)</li>
+            <li><strong>컨텍스트</strong> — System Prompt + Agent Memory + Chat History</li>
+            <li><strong>추가 처리</strong> — Memory Extraction + Context Summary</li>
+            <li><strong>비용</strong> — API 호출 비용 발생</li>
+            <li><strong>지연</strong> — 1~5초 (모델/길이에 따라)</li>
+        </ul>
+    </div>
+    <div class="legend-card">
+        <h3><span class="badge badge-data">DATA</span> Data Flow</h3>
+        <ul>
+            <li><strong>Supabase</strong> — chat_messages, chat_sessions 저장</li>
+            <li><strong>agent_memory</strong> — LLM 응답 시만 memory 추출</li>
+            <li><strong>context_summary</strong> — 12+ 메시지 시 요약 생성</li>
+            <li><strong>SSE Stream</strong> — source + function 필드 포함</li>
+            <li><strong>Frontend Badge</strong> — 초록(rule) / 보라(LLM) 배지</li>
+        </ul>
+    </div>
+</div>
+
+<script>
+    mermaid.initialize({
+        startOnLoad: true,
+        theme: 'dark',
+        themeVariables: {
+            darkMode: true,
+            background: '#1e293b',
+            primaryColor: '#059669',
+            primaryTextColor: '#f1f5f9',
+            primaryBorderColor: '#34d399',
+            lineColor: '#64748b',
+            secondaryColor: '#7c3aed',
+            tertiaryColor: '#334155',
+            fontFamily: '-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif',
+            fontSize: '13px',
+        },
+        flowchart: {
+            curve: 'basis',
+            padding: 20,
+        }
+    });
+</script>
+
+</body>
+</html>
