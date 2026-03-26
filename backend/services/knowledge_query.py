@@ -809,8 +809,6 @@ class KnowledgeQuery:
             rating = _safe_rating(movie.get("vote_average", 0))
             director = movie.get("director", "")
             overview = movie.get("overview", "")
-            if overview and len(overview) > 80:
-                overview = overview[:80] + "..."
 
             response += (
                 f"### {i}. {movie.get('title', '')} ({year})\n"

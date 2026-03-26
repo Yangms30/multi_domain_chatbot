@@ -138,9 +138,6 @@
         <button data-category="" class="category-pill active flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-primary text-white px-5 text-sm font-medium transition-all shadow-lg shadow-primary/20">
             <span class="material-symbols-outlined text-sm">auto_awesome</span> All Experts
         </button>
-        <button data-category="healthcare" class="category-pill flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-slate-800/50 text-slate-300 px-5 text-sm font-medium hover:bg-slate-700/50 transition-all border border-slate-700/50">
-            <span class="material-symbols-outlined text-sm">health_and_safety</span> Healthcare
-        </button>
         <button data-category="movie" class="category-pill flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-slate-800/50 text-slate-300 px-5 text-sm font-medium hover:bg-slate-700/50 transition-all border border-slate-700/50">
             <span class="material-symbols-outlined text-sm">movie</span> Movie
         </button>
@@ -161,18 +158,6 @@
                 <span class="material-symbols-outlined text-primary">new_releases</span> Latest Updates
             </h2>
             <div class="space-y-4">
-                <div class="glass p-4 rounded-xl flex items-center justify-between">
-                    <div class="flex items-center gap-4">
-                        <div class="size-10 rounded bg-slate-800 flex items-center justify-center text-emerald-400">
-                            <span class="material-symbols-outlined">upgrade</span>
-                        </div>
-                        <div>
-                            <p class="text-slate-100 font-medium">Health Coach v1.0.0</p>
-                            <p class="text-slate-500 text-xs">Added personalized wellness tracking and nutrition advice.</p>
-                        </div>
-                    </div>
-                    <span class="text-xs text-slate-600 font-medium">2 hours ago</span>
-                </div>
                 <div class="glass p-4 rounded-xl flex items-center justify-between">
                     <div class="flex items-center gap-4">
                         <div class="size-10 rounded bg-slate-800 flex items-center justify-center text-purple-400">
@@ -276,7 +261,6 @@
 <script>
 (function () {
     const DOMAIN_COLORS = {
-        healthcare: '#10b981',
         movie: '#8b5cf6',
         assistant: '#256af4',
     };
@@ -428,11 +412,21 @@
 
     // Proactive question based on missing user info
     const PROFILE_QUESTIONS = [
-        { key: 'name',     q: '아직 이름을 모르네요! 뭐라고 불러드릴까요? 😊' },
-        { key: 'job',      q: '혹시 무슨 일 하세요? 아니면 학생이세요?' },
-        { key: 'hobby',    q: '요즘 취미로 뭐 하세요? 관심사가 궁금해요~' },
-        { key: 'food',     q: '좋아하는 음식이 뭐예요? 맛집 추천해드릴 수 있어요!' },
-        { key: 'location', q: '어디 쪽에 사세요? 날씨나 맛집 얘기할 때 도움이 될 거예요~' },
+        { keywords: ['name', '이름', '불러'],      q: '아직 이름을 모르네요! 뭐라고 불러드릴까요? 😊' },
+        { keywords: ['job', '직업', '일', '개발', 'developer', 'engineer', '학생', 'student', '회사', '직장', 'work', 'occupation'],       q: '혹시 무슨 일 하세요? 아니면 학생이세요? 🏢' },
+        { keywords: ['location', '사는', '거주', '동네', '지역', 'city', 'live'],  q: '어디 쪽에 사세요? 날씨나 맛집 얘기할 때 도움이 될 거예요~ 📍' },
+        { keywords: ['food', '음식', '맛집', '요리', 'cuisine', 'restaurant'],      q: '좋아하는 음식이 뭐예요? 맛집 추천해드릴 수 있어요! 🍽️' },
+        { keywords: ['hobby', '취미', '관심사', 'interest'],     q: '요즘 취미로 뭐 하세요? 관심사가 궁금해요~ 🎯' },
+        { keywords: ['coffee', '커피', '차', 'tea', '음료'],    q: '커피파세요 차파세요? ☕ 아니면 다른 음료를 좋아하세요?' },
+        { keywords: ['music', '음악', '노래', 'song', 'genre'],     q: '요즘 자주 듣는 노래나 좋아하는 장르 있어요? 🎵' },
+        { keywords: ['mbti', 'MBTI'],      q: 'MBTI 혹시 아세요? 궁금하네요~ 😆' },
+        { keywords: ['pet', '반려', '동물', '강아지', '고양이', 'dog', 'cat'],       q: '혹시 반려동물 키우세요? 🐾' },
+        { keywords: ['exercise', '운동', 'fitness', 'gym', '헬스'],  q: '운동은 뭐 하세요? 아니면 하고 싶은 운동 있어요? 💪' },
+        { keywords: ['weekend', '주말'],   q: '주말에 보통 뭐 하면서 보내세요? 🌤️' },
+        { keywords: ['movie', '영화', '드라마', 'drama', 'netflix'],     q: '영화나 드라마 좋아하세요? 요즘 뭐 보고 계세요? 🎬' },
+        { keywords: ['goal', '목표', '계획', 'plan'],      q: '요즘 목표로 하고 있는 거 있어요? 같이 응원할게요! 🎯' },
+        { keywords: ['sleep', '수면', '잠', '아침형', '저녁형'],     q: '보통 몇 시쯤 주무세요? 아침형인지 저녁형인지 궁금해요 🌙' },
+        { keywords: ['travel', '여행', 'trip'],    q: '여행 좋아하세요? 최근에 다녀온 곳이나 가고 싶은 곳 있어요? ✈️' },
     ];
 
     async function showSmartGreeting() {
@@ -443,9 +437,10 @@
             const memories = await res.json();
             const knownText = memories.map(m => m.content).join(' ').toLowerCase();
 
-            // Find first missing info
+            // Find first missing info — match any keyword in the list
             for (const item of PROFILE_QUESTIONS) {
-                if (!knownText.includes(item.key)) {
+                const found = item.keywords.some(kw => knownText.includes(kw.toLowerCase()));
+                if (!found) {
                     setTimeout(() => appendBotMessage(item.q), 800);
                     return;
                 }

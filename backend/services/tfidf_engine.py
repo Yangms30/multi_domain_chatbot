@@ -213,8 +213,6 @@ class TfidfEngine:
             title = top["title"]
             data = top["data"]
             content = data.get("content", "") or data.get("overview", "") or str(data)
-            if len(content) > 500:
-                content = content[:500] + "..."
             response = f"## {title}\n\n{content}"
             if len(results) > 1:
                 response += "\n\n### 관련 항목\n"
@@ -228,8 +226,6 @@ class TfidfEngine:
             title = r["title"]
             data = r["data"]
             desc = data.get("overview", "") or data.get("content", "")
-            if desc and len(desc) > 100:
-                desc = desc[:100] + "..."
             response += f"- **{title}**"
             if desc:
                 response += f": {desc}"
