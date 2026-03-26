@@ -37,6 +37,61 @@
             background: rgba(255, 255, 255, 0.06);
             border-color: rgba(37, 106, 244, 0.3);
         }
+        /* Chatbot Widget */
+        .chat-widget-panel {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(20px) scale(0.95);
+            opacity: 0;
+            pointer-events: none;
+        }
+        .chat-widget-panel.open {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .chat-fab {
+            transition: all 0.2s ease;
+        }
+        .chat-fab:hover {
+            transform: scale(1.1);
+        }
+        .chat-bubble-user {
+            background: #256af4;
+            color: white;
+            border-radius: 1rem 1rem 0.25rem 1rem;
+        }
+        .chat-bubble-bot {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: #e2e8f0;
+            border-radius: 1rem 1rem 1rem 0.25rem;
+        }
+        .chat-messages::-webkit-scrollbar { width: 4px; }
+        .chat-messages::-webkit-scrollbar-track { background: transparent; }
+        .chat-messages::-webkit-scrollbar-thumb { background: #282e39; border-radius: 10px; }
+        .typing-dots span {
+            display: inline-block;
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: #94a3b8;
+            animation: typing 1.2s infinite;
+        }
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing {
+            0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+            30% { opacity: 1; transform: translateY(-4px); }
+        }
+        .mic-recording {
+            background: #ef4444 !important;
+            color: white !important;
+            border-color: #ef4444 !important;
+            animation: mic-pulse 1s infinite;
+        }
+        @keyframes mic-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
+            50% { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+        }
     </style>
 </head>
 <body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 selection:bg-primary/30">
@@ -88,6 +143,9 @@
         </button>
         <button data-category="movie" class="category-pill flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-slate-800/50 text-slate-300 px-5 text-sm font-medium hover:bg-slate-700/50 transition-all border border-slate-700/50">
             <span class="material-symbols-outlined text-sm">movie</span> Movie
+        </button>
+        <button data-category="assistant" class="category-pill flex h-10 shrink-0 items-center justify-center gap-2 rounded-full bg-slate-800/50 text-slate-300 px-5 text-sm font-medium hover:bg-slate-700/50 transition-all border border-slate-700/50">
+            <span class="material-symbols-outlined text-sm">smart_toy</span> Assistant
         </button>
     </div>
 
@@ -159,6 +217,60 @@
 
 </div>
 
+<!-- Floating Chatbot Widget -->
+<div id="chat-widget" class="fixed bottom-6 right-6 z-[100] flex flex-col items-end gap-4">
+    <!-- Chat Panel -->
+    <div id="chat-panel" class="chat-widget-panel w-[380px] h-[520px] rounded-2xl overflow-hidden flex flex-col shadow-2xl shadow-black/40 border border-slate-700/50" style="background: #151b28;">
+        <!-- Header -->
+        <div class="flex items-center justify-between px-5 py-4 border-b border-slate-700/50" style="background: #1a2235;">
+            <div class="flex items-center gap-3">
+                <div class="size-9 rounded-xl bg-primary/20 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-primary text-xl">smart_toy</span>
+                </div>
+                <div>
+                    <h3 class="text-slate-100 font-bold text-sm">Personal Assistant</h3>
+                    <p class="text-emerald-400 text-xs flex items-center gap-1">
+                        <span class="inline-block size-1.5 rounded-full bg-emerald-400"></span> Online
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center gap-1">
+                <button id="chat-clear" class="p-1.5 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-700/50 transition-all" title="Clear chat">
+                    <span class="material-symbols-outlined text-lg">delete_sweep</span>
+                </button>
+                <button id="chat-close" class="p-1.5 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-700/50 transition-all">
+                    <span class="material-symbols-outlined text-lg">close</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Messages -->
+        <div id="chat-messages" class="chat-messages flex-1 overflow-y-auto px-4 py-4 space-y-3">
+        </div>
+
+        <!-- Input -->
+        <div class="px-4 py-3 border-t border-slate-700/50" style="background: #1a2235;">
+            <form id="chat-form" class="flex items-end gap-2">
+                <textarea id="chat-input" rows="1" placeholder="메시지를 입력하세요..."
+                    class="flex-1 bg-slate-800/60 border border-slate-700/50 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
+                    style="max-height: 100px;"></textarea>
+                <button type="button" id="chat-mic" class="size-10 rounded-xl bg-slate-800/60 hover:bg-slate-700/60 text-slate-400 hover:text-white flex items-center justify-center shrink-0 transition-all border border-slate-700/50" title="음성 입력">
+                    <span class="material-symbols-outlined text-lg">mic</span>
+                </button>
+                <button type="submit" id="chat-send" class="size-10 rounded-xl bg-primary hover:bg-primary/90 text-white flex items-center justify-center shrink-0 transition-all shadow-md shadow-primary/20 disabled:opacity-40 disabled:cursor-not-allowed">
+                    <span class="material-symbols-outlined text-lg">send</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- FAB Button -->
+    <button id="chat-fab" class="chat-fab size-14 rounded-full bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/30 hover:shadow-primary/50">
+        <span id="fab-icon-chat" class="material-symbols-outlined text-2xl">chat</span>
+        <span id="fab-icon-close" class="material-symbols-outlined text-2xl hidden">close</span>
+    </button>
+</div>
+
 <script>window.__API_BASE = "https://multi-domain-chatbot-5ebb.onrender.com";</script>
 <script src="/static/js/api.js"></script>
 <script>
@@ -166,6 +278,7 @@
     const DOMAIN_COLORS = {
         healthcare: '#10b981',
         movie: '#8b5cf6',
+        assistant: '#256af4',
     };
 
     const grid = document.getElementById('chatbot-grid');
@@ -273,6 +386,309 @@
     // ---- Init ----
     document.addEventListener('DOMContentLoaded', function () {
         fetchChatbots('');
+    });
+})();
+</script>
+
+<!-- Chatbot Widget Script -->
+<script>
+(function () {
+    const DOMAIN = 'assistant';
+    let sessionId = null;
+    let isStreaming = false;
+
+    const fab = document.getElementById('chat-fab');
+    const panel = document.getElementById('chat-panel');
+    const iconChat = document.getElementById('fab-icon-chat');
+    const iconClose = document.getElementById('fab-icon-close');
+    const form = document.getElementById('chat-form');
+    const input = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('chat-send');
+    const micBtn = document.getElementById('chat-mic');
+    const messagesEl = document.getElementById('chat-messages');
+    const clearBtn = document.getElementById('chat-clear');
+    const closeBtn = document.getElementById('chat-close');
+
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
+
+    // Time-based greeting
+    function getGreeting() {
+        const h = new Date().getHours();
+        if (h >= 6 && h < 9) return '좋은 아침이에요! ☀️ 오늘 하루도 힘내봐요!';
+        if (h >= 9 && h < 11) return '오전 시간 잘 보내고 계세요? ☕';
+        if (h >= 11 && h < 13) return '이제 곧 점심시간이네요! 🍽️';
+        if (h >= 13 && h < 14) return '점심은 맛있게 드셨나요? 😋';
+        if (h >= 14 && h < 17) return '오후도 파이팅! 💪';
+        if (h >= 17 && h < 19) return '퇴근 시간이 다가오고 있네요! 🌇';
+        if (h >= 19 && h < 22) return '좋은 저녁이에요! 🌙';
+        return '늦은 시간까지 수고하세요! 🌜';
+    }
+
+    // Proactive question based on missing user info
+    const PROFILE_QUESTIONS = [
+        { key: 'name',     q: '아직 이름을 모르네요! 뭐라고 불러드릴까요? 😊' },
+        { key: 'job',      q: '혹시 무슨 일 하세요? 아니면 학생이세요?' },
+        { key: 'hobby',    q: '요즘 취미로 뭐 하세요? 관심사가 궁금해요~' },
+        { key: 'food',     q: '좋아하는 음식이 뭐예요? 맛집 추천해드릴 수 있어요!' },
+        { key: 'location', q: '어디 쪽에 사세요? 날씨나 맛집 얘기할 때 도움이 될 거예요~' },
+    ];
+
+    async function showSmartGreeting() {
+        appendBotMessage(getGreeting());
+
+        try {
+            const res = await fetch(API_BASE + '/api/memory?domain=assistant');
+            const memories = await res.json();
+            const knownText = memories.map(m => m.content).join(' ').toLowerCase();
+
+            // Find first missing info
+            for (const item of PROFILE_QUESTIONS) {
+                if (!knownText.includes(item.key)) {
+                    setTimeout(() => appendBotMessage(item.q), 800);
+                    return;
+                }
+            }
+            // All info known — personalized message
+            appendBotMessage('오늘도 뭐든 편하게 물어보세요~');
+        } catch {
+            // API fail — just show generic
+            appendBotMessage('무엇이든 편하게 물어보세요~');
+        }
+    }
+    showSmartGreeting();
+
+    // Toggle panel
+    function togglePanel() {
+        const isOpen = panel.classList.contains('open');
+        panel.classList.toggle('open');
+        iconChat.classList.toggle('hidden', !isOpen);
+        iconClose.classList.toggle('hidden', isOpen);
+        if (!isOpen) input.focus();
+    }
+
+    fab.addEventListener('click', togglePanel);
+    closeBtn.addEventListener('click', togglePanel);
+
+    // Auto-resize textarea
+    input.addEventListener('input', function () {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+    });
+
+    // Enter to send (Shift+Enter for newline)
+    input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            form.dispatchEvent(new Event('submit'));
+        }
+    });
+
+    // Clear chat
+    clearBtn.addEventListener('click', function () {
+        sessionId = null;
+        messagesEl.innerHTML = '';
+        showSmartGreeting();
+    });
+
+    // Append user message
+    function appendUserMessage(text) {
+        const div = document.createElement('div');
+        div.className = 'flex justify-end';
+        div.innerHTML = '<div class="chat-bubble-user px-3.5 py-2.5 text-sm max-w-[80%] whitespace-pre-wrap">' + escapeHtml(text) + '</div>';
+        messagesEl.appendChild(div);
+        scrollToBottom();
+    }
+
+    // Append bot message (returns the content element for streaming)
+    function appendBotMessage(text) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex gap-2.5 items-end';
+        const content = document.createElement('div');
+        content.className = 'chat-bubble-bot px-3.5 py-2.5 text-sm max-w-[80%]';
+        content.innerHTML = text || '';
+        wrapper.innerHTML = '<div class="size-7 rounded-full bg-primary/20 flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-primary text-sm">smart_toy</span></div>';
+        wrapper.appendChild(content);
+        messagesEl.appendChild(wrapper);
+        scrollToBottom();
+        return content;
+    }
+
+    // Show typing indicator
+    function showTyping() {
+        const el = appendBotMessage('<div class="typing-dots"><span></span> <span></span> <span></span></div>');
+        el.id = 'typing-indicator';
+        return el;
+    }
+
+    function removeTyping() {
+        const el = document.getElementById('typing-indicator');
+        if (el) el.closest('.flex').remove();
+    }
+
+    function scrollToBottom() {
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function escapeHtml(text) {
+        const d = document.createElement('div');
+        d.textContent = text;
+        return d.innerHTML;
+    }
+
+    // Simple markdown: bold, newlines
+    function formatResponse(text) {
+        return text
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\n/g, '<br>');
+    }
+
+    // Send message
+    form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const msg = input.value.trim();
+        if (!msg || isStreaming) return;
+
+        appendUserMessage(msg);
+        input.value = '';
+        input.style.height = 'auto';
+        isStreaming = true;
+        sendBtn.disabled = true;
+
+        showTyping();
+
+        try {
+            const body = { message: msg, domain: DOMAIN, session_id: sessionId, stream: true };
+            const res = await fetch(API_BASE + '/api/chat/stream', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+
+            removeTyping();
+            const contentEl = appendBotMessage('');
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            let fullText = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                    if (!line.startsWith('data: ')) continue;
+                    try {
+                        const data = JSON.parse(line.slice(6));
+                        if (data.session_id && data.start) {
+                            sessionId = data.session_id;
+                        } else if (data.content && !data.done) {
+                            fullText += data.content;
+                            contentEl.innerHTML = formatResponse(fullText);
+                            scrollToBottom();
+                        }
+                    } catch (_) {}
+                }
+            }
+        } catch (err) {
+            removeTyping();
+            appendBotMessage('죄송합니다, 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        }
+
+        isStreaming = false;
+        sendBtn.disabled = false;
+    });
+
+    // ---- Voice Recording ----
+    micBtn.addEventListener('click', async function () {
+        if (isRecording) {
+            // Stop recording
+            mediaRecorder.stop();
+            return;
+        }
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+
+            mediaRecorder.ondataavailable = function (e) {
+                audioChunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = async function () {
+                // Stop mic access
+                stream.getTracks().forEach(t => t.stop());
+                isRecording = false;
+                micBtn.classList.remove('mic-recording');
+                micBtn.querySelector('span').textContent = 'mic';
+
+                const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                if (blob.size < 100) return; // too short
+
+                appendUserMessage('🎤 음성 메시지...');
+                isStreaming = true;
+                sendBtn.disabled = true;
+                showTyping();
+
+                try {
+                    const formData = new FormData();
+                    formData.append('audio', blob, 'voice.webm');
+                    formData.append('domain', DOMAIN);
+                    if (sessionId) formData.append('session_id', sessionId);
+
+                    const res = await fetch(API_BASE + '/api/voice', {
+                        method: 'POST',
+                        body: formData,
+                    });
+
+                    removeTyping();
+
+                    const transcript = decodeURIComponent(res.headers.get('X-Transcript') || '');
+                    const reply = decodeURIComponent(res.headers.get('X-Reply') || '');
+                    const newSessionId = res.headers.get('X-Session-Id');
+                    if (newSessionId) sessionId = newSessionId;
+
+                    // Update user message with actual transcript
+                    const userMsgs = messagesEl.querySelectorAll('.chat-bubble-user');
+                    const lastUserMsg = userMsgs[userMsgs.length - 1];
+                    if (lastUserMsg && transcript) {
+                        lastUserMsg.innerHTML = '🎤 ' + escapeHtml(transcript);
+                    }
+
+                    // Show bot reply
+                    if (reply) {
+                        appendBotMessage(formatResponse(reply));
+                    }
+
+                    // Play audio response
+                    const audioBlob = await res.blob();
+                    if (audioBlob.size > 0) {
+                        const audioUrl = URL.createObjectURL(audioBlob);
+                        const audio = new Audio(audioUrl);
+                        audio.play();
+                        audio.onended = function () { URL.revokeObjectURL(audioUrl); };
+                    }
+                } catch (err) {
+                    removeTyping();
+                    appendBotMessage('음성 처리 중 오류가 발생했습니다.');
+                }
+
+                isStreaming = false;
+                sendBtn.disabled = false;
+            };
+
+            mediaRecorder.start();
+            isRecording = true;
+            micBtn.classList.add('mic-recording');
+            micBtn.querySelector('span').textContent = 'stop';
+        } catch (err) {
+            appendBotMessage('마이크 접근이 허용되지 않았습니다. 브라우저 설정을 확인해주세요.');
+        }
     });
 })();
 </script>

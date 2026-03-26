@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from models.database import init_db, close_db
 from services.openrouter import OpenRouterClient
 from services.chat_service import ChatService
-from routers import chatbots, chat, history, config
+from routers import chatbots, chat, history, config, voice
 from routers import memory as memory_router
 
 load_dotenv()
@@ -30,6 +30,14 @@ async def lifespan(app: FastAPI):
     api_key = os.getenv("OPENROUTER_API_KEY", "")
     openrouter_client = OpenRouterClient(api_key)
     app.state.chat_service = ChatService(openrouter_client)
+
+    # Build TF-IDF indices for rule-based similarity search
+    try:
+        counts = app.state.chat_service.rule_engine.tfidf_engine.build_all_indices()
+        logger.info("TF-IDF indices ready: %s", counts)
+    except Exception as e:
+        logger.error("Failed to build TF-IDF indices: %s", e)
+
     logger.info("Application started successfully")
     yield
     # Shutdown
@@ -63,6 +71,7 @@ app.include_router(chat.router)
 app.include_router(history.router)
 app.include_router(config.router)
 app.include_router(memory_router.router)
+app.include_router(voice.router)
 
 # Frontend static files (mount last so API routes take priority)
 frontend_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")

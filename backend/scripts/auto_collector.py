@@ -62,7 +62,7 @@ DOMAIN_SCHEMAS = {
             '  "cast": [\n'
             '    {{"name": "배우이름", "character": "역할"}}\n'
             '  ],\n'
-            '  "overview": "줄거리 2-3문장",\n'
+            '  "overview": "줄거리 5문장 이상",\n'
             '  "tagline": "대표 대사나 캐치프레이즈",\n'
             '  "original_language": "ko/en/ja 등",\n'
             '  "production_countries": ["한국"]\n'
@@ -156,60 +156,11 @@ DOMAIN_SCHEMAS = {
             f"설명: {data.get('description', '')}"
         ),
     },
-    "drama": {
-        "description": "드라마 정보",
-        "list_prompt": "다음 주제에 맞는 드라마 제목들을 JSON 배열로 나열해줘. 제목만, 한국어로. 최대 {count}개.\n주제: {topic}",
-        "detail_prompt": (
-            "다음 드라마에 대한 정보를 정확하게 JSON으로 작성해줘. 모르는 정보는 빈 문자열로.\n"
-            "드라마: {item}\n\n"
-            "JSON 형식:\n"
-            '{{\n'
-            '  "title": "한국어 제목",\n'
-            '  "original_title": "원제",\n'
-            '  "air_date": "YYYY-MM-DD (첫 방영일)",\n'
-            '  "end_date": "YYYY-MM-DD (종영일)",\n'
-            '  "episodes": 총회차숫자,\n'
-            '  "runtime_per_ep": 회당분단위숫자,\n'
-            '  "vote_average": 10점만점숫자,\n'
-            '  "genres": ["장르1", "장르2"],\n'
-            '  "director": "연출자 이름",\n'
-            '  "writer": "작가 이름",\n'
-            '  "cast": [\n'
-            '    {{"name": "배우이름", "character": "역할"}}\n'
-            '  ],\n'
-            '  "overview": "줄거리 2-3문장",\n'
-            '  "network": "방송사/플랫폼 (예: tvN, SBS, 넷플릭스)",\n'
-            '  "tagline": "캐치프레이즈",\n'
-            '  "original_language": "ko/en/ja 등",\n'
-            '  "production_countries": ["한국"]\n'
-            '}}'
-        ),
-        "category": "drama",
-        "build_tags": lambda data: (
-            data.get("genres", [])
-            + [data.get("director", "")]
-            + [data.get("writer", "")]
-            + [c["name"] for c in data.get("cast", [])[:5]]
-            + [data.get("network", "")]
-            + [data.get("original_language", "")]
-        ),
-        "build_content": lambda data: (
-            f"{data.get('title', '')} ({data.get('air_date', '')[:4] if data.get('air_date') else '미정'})\n"
-            f"연출: {data.get('director', '')}\n"
-            f"작가: {data.get('writer', '')}\n"
-            f"출연: {', '.join(c['name'] for c in data.get('cast', [])[:5])}\n"
-            f"장르: {', '.join(data.get('genres', []))}\n"
-            f"방송사: {data.get('network', '')}\n"
-            f"회차: {data.get('episodes', '')}부작\n"
-            f"평점: {data.get('vote_average', 0)}/10\n"
-            f"줄거리: {data.get('overview', '')}"
-        ),
-    },
 }
 
 
 class AutoCollector:
-    def __init__(self, domain: str, model: str = "openai/gpt-4o-mini"):
+    def __init__(self, domain: str, model: str = "qwen/qwen-3.5-72b-instruct"):
         self.domain = domain
         self.model = model
         self.schema = DOMAIN_SCHEMAS[domain]

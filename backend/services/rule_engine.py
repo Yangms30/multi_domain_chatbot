@@ -6,6 +6,7 @@ Handles simple queries without LLM calls to save cost and reduce latency.
 import re
 
 from services.knowledge_query import KnowledgeQuery
+from services.tfidf_engine import TfidfEngine
 
 
 class RuleEngine:
@@ -14,6 +15,12 @@ class RuleEngine:
     def __init__(self):
         self._faq_database = self._build_faq_database()
         self._knowledge = KnowledgeQuery()
+        self._tfidf = TfidfEngine()
+
+    @property
+    def tfidf_engine(self) -> TfidfEngine:
+        """Access the TF-IDF engine (for index building from main.py)."""
+        return self._tfidf
 
     def try_respond(self, message: str, domain: str) -> tuple[str, str] | None:
         """
@@ -24,6 +31,11 @@ class RuleEngine:
         kb_result = self._knowledge.try_respond(message, domain)
         if kb_result:
             return kb_result
+
+        # Try TF-IDF similarity search (fallback when pattern matching fails)
+        tfidf_result = self._tfidf.try_respond(message, domain)
+        if tfidf_result:
+            return tfidf_result
 
         if domain != "healthcare":
             return None
