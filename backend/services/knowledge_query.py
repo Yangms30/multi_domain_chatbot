@@ -170,7 +170,12 @@ class KnowledgeQuery:
         if result:
             return result
 
-        # 10. Real-time box office
+        # 10. Film analysis (LLM-assisted)
+        result = self._try_film_analysis(msg, msg_lower)
+        if result:
+            return result
+
+        # 11. Real-time box office
         result = self._try_boxoffice(msg_lower)
         if result:
             return result
@@ -495,6 +500,55 @@ class KnowledgeQuery:
         return (self._format_movie_list(f"{name_query} 감독 작품", movies), "감독 작품 조회")
 
     # ── Ranking ───────────────────────────────────────────────────
+
+    # ── Real-time Box Office ──────────────────────────────────────
+
+    # ── Film Analysis (LLM-assisted) ──────────────────────────────
+
+    _ANALYSIS_KEYWORDS = [
+        "분석", "해석", "촬영기법", "스토리 구조", "테마", "상징",
+        "연출", "영화적", "기법", "서사", "메시지",
+    ]
+
+    def _try_film_analysis(self, msg: str, msg_lower: str) -> tuple[str, str] | None:
+        """Detect film analysis request, extract movie title, return __FILM_ANALYSIS__ marker."""
+        if not any(kw in msg_lower for kw in self._ANALYSIS_KEYWORDS):
+            return None
+
+        # Extract movie title by removing analysis keywords and common suffixes
+        title = msg
+        for kw in self._ANALYSIS_KEYWORDS + [
+            "해줘", "알려줘", "설명", "영화", "좀", "해봐", "부탁",
+            "에 대해", "의", "을", "를", "이", "가",
+        ]:
+            title = title.replace(kw, "")
+        title = title.strip()
+
+        if len(title) < 2:
+            return None
+
+        # Search DB for movie
+        movies = self._search_movies_by_title(title, limit=1)
+        if movies:
+            movie = movies[0]
+            context = {
+                "title": movie.get("title", title),
+                "director": movie.get("director", ""),
+                "genres": movie.get("genres", []),
+                "release_date": movie.get("release_date", ""),
+                "overview": movie.get("overview", ""),
+                "cast": [c.get("name", "") for c in movie.get("cast", [])[:5]],
+                "vote_average": movie.get("vote_average", 0),
+                "from_db": True,
+            }
+        else:
+            context = {
+                "title": title,
+                "from_db": False,
+            }
+
+        import json as _json
+        return ("__FILM_ANALYSIS__", _json.dumps(context, ensure_ascii=False))
 
     # ── Real-time Box Office ──────────────────────────────────────
 
