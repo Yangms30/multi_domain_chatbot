@@ -6,7 +6,7 @@ Handles simple queries without LLM calls to save cost and reduce latency.
 import re
 
 from services.knowledge_query import KnowledgeQuery
-from services.tfidf_engine import TfidfEngine
+from services.bm25_engine import Bm25Engine
 
 
 class RuleEngine:
@@ -15,11 +15,11 @@ class RuleEngine:
     def __init__(self):
         self._faq_database = self._build_faq_database()
         self._knowledge = KnowledgeQuery()
-        self._tfidf = TfidfEngine()
+        self._tfidf = Bm25Engine()
 
     @property
-    def tfidf_engine(self) -> TfidfEngine:
-        """Access the TF-IDF engine (for index building from main.py)."""
+    def tfidf_engine(self) -> Bm25Engine:
+        """Access the search engine (for index building from main.py)."""
         return self._tfidf
 
     def try_respond(self, message: str, domain: str) -> tuple[str, str] | None:
@@ -37,6 +37,7 @@ class RuleEngine:
         if tfidf_result:
             return tfidf_result
 
+        # Healthcare-specific rules (kept for potential future use)
         if domain != "healthcare":
             return None
 

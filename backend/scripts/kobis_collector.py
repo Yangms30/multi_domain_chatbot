@@ -98,7 +98,10 @@ class KobisCollector:
                 collected_codes.add(movie_cd)
                 new_this_month += 1
 
-                self._process_movie(movie_cd, movie.get("movieNm", ""))
+                audience = int(movie.get("audiAcc", 0))
+                sales = int(movie.get("salesAcc", 0))
+                self._process_movie(movie_cd, movie.get("movieNm", ""),
+                                    audience_count=audience, sales_amount=sales)
 
             logger.info("  %s: %d편 (신규 %d)", month_label, len(movies), new_this_month)
             time.sleep(0.3)
@@ -124,7 +127,10 @@ class KobisCollector:
                     continue
                 collected_codes.add(movie_cd)
 
-                self._process_movie(movie_cd, movie.get("movieNm", ""))
+                audience = int(movie.get("audiAcc", 0))
+                sales = int(movie.get("salesAcc", 0))
+                self._process_movie(movie_cd, movie.get("movieNm", ""),
+                                    audience_count=audience, sales_amount=sales)
 
             time.sleep(0.3)
 
@@ -357,7 +363,8 @@ class KobisCollector:
 
     # ── Process & Store ───────────────────────────────────────────
 
-    def _process_movie(self, movie_cd: str, movie_name: str):
+    def _process_movie(self, movie_cd: str, movie_name: str,
+                       audience_count: int = 0, sales_amount: int = 0):
         self.stats["total"] += 1
         external_id = f"kobis_{movie_cd}"
 
@@ -429,6 +436,8 @@ class KobisCollector:
             "original_language": "ko",
             "production_countries": nations,
             "kobis_cd": movie_cd,
+            "audience_count": audience_count,
+            "sales_amount": sales_amount,
         }
 
         # Build content for search

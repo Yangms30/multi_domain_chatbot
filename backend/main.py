@@ -31,12 +31,12 @@ async def lifespan(app: FastAPI):
     openrouter_client = OpenRouterClient(api_key)
     app.state.chat_service = ChatService(openrouter_client)
 
-    # Build TF-IDF indices for rule-based similarity search
+    # Build BM25+ indices for rule-based similarity search
     try:
         counts = app.state.chat_service.rule_engine.tfidf_engine.build_all_indices()
-        logger.info("TF-IDF indices ready: %s", counts)
+        logger.info("BM25+ indices ready: %s", counts)
     except Exception as e:
-        logger.error("Failed to build TF-IDF indices: %s", e)
+        logger.error("Failed to build BM25+ indices: %s", e)
 
     logger.info("Application started successfully")
     yield

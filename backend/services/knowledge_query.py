@@ -482,7 +482,13 @@ class KnowledgeQuery:
     # ── Ranking ───────────────────────────────────────────────────
 
     def _try_ranking(self, msg_lower: str) -> tuple[str, str] | None:
-        if any(kw in msg_lower for kw in ["인기 영화", "인기있는", "인기순", "많이 본", "핫한"]):
+        if any(kw in msg_lower for kw in ["인기 영화", "인기있는", "인기순", "많이 본", "핫한",
+                                           "유명한", "흥행", "대박", "천만", "블록버스터", "관객수"]):
+            # Try audience-count based ranking first
+            movies = self._get_popular_movies(limit=5)
+            if movies:
+                return (self._format_popular_movie_list("인기 영화 TOP 5", movies), "관객수 기반 인기 순위")
+            # Fallback to rating-based
             movies = self._get_top_rated_movies(limit=5)
             if movies:
                 return (self._format_movie_list("인기 영화 TOP 5", movies), "인기 영화 순위")
@@ -744,6 +750,24 @@ class KnowledgeQuery:
         filtered = [r["data"] for r in result.data if (r["data"].get("runtime") or 0) >= 150]
         return filtered[:limit]
 
+    def _get_popular_movies(self, limit: int = 5) -> list[dict]:
+        """Get movies ordered by audience count (popularity)."""
+        db = get_db()
+        result = (
+            db.table("domain_knowledge")
+            .select("data")
+            .eq("domain", "movie")
+            .eq("category", "movie")
+            .order("data->>audience_count", desc=True)
+            .limit(limit * 2)
+            .execute()
+        )
+        if not result.data:
+            return []
+        # Filter out movies with no audience data
+        movies = [r["data"] for r in result.data if (r["data"].get("audience_count") or 0) > 0]
+        return movies[:limit]
+
     def _get_all_movies(self) -> list[dict]:
         db = get_db()
         result = (
@@ -823,6 +847,43 @@ class KnowledgeQuery:
 
         response += "*영화에 대해 더 자세히 알고 싶으면 제목을 말씀해주세요!*"
         return response
+
+    def _format_popular_movie_list(self, title: str, movies: list[dict]) -> str:
+        """Format movie list with audience count."""
+        response = f"## {title}\n\n"
+
+        for i, movie in enumerate(movies, 1):
+            year = movie.get("release_date", "")[:4] or "미정"
+            audience = movie.get("audience_count", 0)
+            audience_str = self._format_audience(audience)
+            rating = _safe_rating(movie.get("vote_average", 0))
+            genres = ", ".join(movie.get("genres", []))
+
+            response += (
+                f"### {i}. {movie.get('title', '')} ({year})\n"
+                f"- **관객수**: {audience_str}\n"
+                f"- **평점**: {'⭐' * round(rating / 2)} {rating}/10\n"
+                f"- **장르**: {genres}\n"
+            )
+            director = movie.get("director", "")
+            if director:
+                response += f"- **감독**: {director}\n"
+            response += "\n"
+
+        response += "*영화에 대해 더 자세히 알고 싶으면 제목을 말씀해주세요!*"
+        return response
+
+    @staticmethod
+    def _format_audience(count: int) -> str:
+        """Format audience count for display."""
+        if count >= 10_000_000:
+            return f"{count / 10_000_000:.1f}천만 명"
+        elif count >= 10_000:
+            return f"{count / 10_000:.0f}만 명"
+        elif count >= 1_000:
+            return f"{count / 1_000:.1f}천 명"
+        else:
+            return f"{count:,} 명"
 
     def _format_comparison(self, m1: dict, m2: dict) -> str:
         def year(m):

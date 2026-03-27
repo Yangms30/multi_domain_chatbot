@@ -5,6 +5,7 @@ python-dotenv==1.1.0
 pydantic==2.11.1
 supabase==2.15.1
 scikit-learn==1.6.1
+rank-bm25==0.2.2
 streamlit==1.45.1
 beautifulsoup4==4.13.4
 faster-whisper==1.1.1
