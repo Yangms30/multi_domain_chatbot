@@ -6,6 +6,7 @@ Returns formatted answers from DB without calling LLM.
 import re
 import logging
 import random
+from datetime import datetime, timedelta
 
 from models.database import get_db
 
@@ -22,6 +23,15 @@ def _safe_rating(val) -> float:
 
 class KnowledgeQuery:
     """Queries domain_knowledge table to generate responses without LLM."""
+
+    _boxoffice = None
+
+    @property
+    def boxoffice(self):
+        if self._boxoffice is None:
+            from services.boxoffice_service import BoxOfficeService
+            self._boxoffice = BoxOfficeService()
+        return self._boxoffice
 
     # ── Mood → Genre mapping ──────────────────────────────────────
     MOOD_GENRES = {
@@ -160,7 +170,12 @@ class KnowledgeQuery:
         if result:
             return result
 
-        # 10. Ranking
+        # 10. Real-time box office
+        result = self._try_boxoffice(msg_lower)
+        if result:
+            return result
+
+        # 11. Ranking
         result = self._try_ranking(msg_lower)
         if result:
             return result
@@ -480,6 +495,98 @@ class KnowledgeQuery:
         return (self._format_movie_list(f"{name_query} 감독 작품", movies), "감독 작품 조회")
 
     # ── Ranking ───────────────────────────────────────────────────
+
+    # ── Real-time Box Office ──────────────────────────────────────
+
+    def _try_boxoffice(self, msg_lower: str) -> tuple[str, str] | None:
+        """Try real-time box office / upcoming movies via KOBIS API."""
+        # Daily box office
+        if any(kw in msg_lower for kw in [
+            "박스오피스", "극장 순위", "오늘 영화 순위", "상영중", "현재 상영",
+            "극장에서", "극장 영화", "오늘 극장"
+        ]):
+            movies = self.boxoffice.get_daily_boxoffice()
+            if movies:
+                return (self._format_boxoffice_list("오늘의 박스오피스 TOP 10", movies),
+                        "실시간 박스오피스")
+
+        # Weekly box office
+        if any(kw in msg_lower for kw in [
+            "이번 주 박스오피스", "주간 순위", "주간 영화", "이번주 영화", "주간 박스오피스"
+        ]):
+            movies = self.boxoffice.get_weekly_boxoffice()
+            if movies:
+                return (self._format_boxoffice_list("이번 주 박스오피스 TOP 10", movies),
+                        "주간 박스오피스")
+
+        # Upcoming movies
+        if any(kw in msg_lower for kw in [
+            "개봉 예정", "곧 개봉", "개봉일", "다음 주 영화", "언제 개봉",
+            "새 영화", "개봉 영화", "곧 나오는"
+        ]):
+            movies = self.boxoffice.get_upcoming_movies()
+            if movies:
+                return (self._format_upcoming_list("개봉 예정 영화", movies),
+                        "개봉 예정작 조회")
+
+        return None
+
+    def _format_boxoffice_list(self, title: str, movies: list[dict]) -> str:
+        """Format daily/weekly box office as a table."""
+        yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+
+        response = f"## {title}\n\n"
+        response += "| 순위 | 영화 | 당일 관객 | 누적 관객 | 전일 대비 |\n"
+        response += "|:----:|------|--------:|--------:|--------:|\n"
+
+        for movie in movies:
+            rank = movie.get("rank", "")
+            name = movie.get("movieNm", "")
+            audi_cnt = int(movie.get("audiCnt", 0))
+            audi_acc = int(movie.get("audiAcc", 0))
+            audi_change = int(movie.get("audiInten", 0))
+
+            audi_cnt_str = self._format_audience(audi_cnt)
+            audi_acc_str = self._format_audience(audi_acc)
+
+            if audi_change > 0:
+                change_str = f"+{self._format_audience(audi_change)}"
+            elif audi_change < 0:
+                change_str = f"-{self._format_audience(abs(audi_change))}"
+            else:
+                change_str = "-"
+
+            response += f"| {rank} | {name} | {audi_cnt_str} | {audi_acc_str} | {change_str} |\n"
+
+        response += f"\n*KOBIS 영화진흥위원회 제공 ({yesterday} 기준)*"
+        return response
+
+    def _format_upcoming_list(self, title: str, movies: list[dict]) -> str:
+        """Format upcoming movies list."""
+        response = f"## {title}\n\n"
+
+        for i, movie in enumerate(movies, 1):
+            name = movie.get("movieNm", "")
+            open_dt = movie.get("openDt", "")
+            if open_dt and len(open_dt) == 8:
+                open_dt = f"{open_dt[:4]}-{open_dt[4:6]}-{open_dt[6:8]}"
+            genre = movie.get("genreAlt", "")
+            directors = movie.get("directors", [])
+            director = directors[0].get("peopleNm", "") if directors else ""
+
+            response += f"### {i}. {name}\n"
+            if open_dt:
+                response += f"- **개봉일**: {open_dt}\n"
+            if genre:
+                response += f"- **장르**: {genre}\n"
+            if director:
+                response += f"- **감독**: {director}\n"
+            response += "\n"
+
+        response += "*KOBIS 영화진흥위원회 제공*"
+        return response
+
+    # ── Ranking ────────────────────────────────────────────────────
 
     def _try_ranking(self, msg_lower: str) -> tuple[str, str] | None:
         if any(kw in msg_lower for kw in ["인기 영화", "인기있는", "인기순", "많이 본", "핫한",
