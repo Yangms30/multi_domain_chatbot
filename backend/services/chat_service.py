@@ -80,48 +80,182 @@ class ChatService:
         }
 
     async def stream_chat(self, message: str, domain: str, session_id: str | None = None, user_id: str = "default", model_override: str | None = None):
-        db = get_db()
-        session_id = self._get_or_create_session(session_id, domain, user_id)
+        done_sent = False
+        try:
+            db = get_db()
+            session_id = self._get_or_create_session(session_id, domain, user_id)
 
-        # Save user message
-        user_msg_id = str(uuid.uuid4())
-        db.table("chat_messages").insert({
-            "id": user_msg_id,
-            "session_id": session_id,
-            "role": "user",
-            "content": message,
-        }).execute()
+            # Save user message
+            user_msg_id = str(uuid.uuid4())
+            db.table("chat_messages").insert({
+                "id": user_msg_id,
+                "session_id": session_id,
+                "role": "user",
+                "content": message,
+            }).execute()
 
-        assistant_msg_id = str(uuid.uuid4())
+            assistant_msg_id = str(uuid.uuid4())
 
-        # Try rule-based response first (no LLM cost)
-        rule_result = self.rule_engine.try_respond(message, domain)
+            # Try rule-based response first (no LLM cost)
+            rule_result = self.rule_engine.try_respond(message, domain)
 
-        if rule_result and rule_result[0] == "__FILM_ANALYSIS__":
-            # Film Analysis: hybrid — detected by rules, answered by LLM
-            from services.film_analysis_service import FilmAnalysisService
-            movie_context = json.loads(rule_result[1])
-            analysis_svc = FilmAnalysisService()
-            analysis_messages = analysis_svc.build_messages(movie_context, message)
+            if rule_result and rule_result[0] == "__FILM_ANALYSIS__":
+                # Film Analysis: hybrid — detected by rules, answered by LLM
+                from services.film_analysis_service import FilmAnalysisService
+                movie_context = json.loads(rule_result[1])
+                analysis_svc = FilmAnalysisService()
+                analysis_messages = analysis_svc.build_messages(movie_context, message)
+                config = self._get_config()
+
+                yield f"data: {json.dumps({'session_id': session_id, 'message_id': assistant_msg_id, 'content': '', 'start': True, 'source': 'llm', 'function': '영화 전문 분석 (AI)'})}\n\n"
+
+                full_content = []
+                try:
+                    stream_gen = await self.openrouter.chat_completion(
+                        messages=analysis_messages,
+                        model=model_override or config["model"],
+                        temperature=0.7,
+                        max_tokens=1500,
+                        stream=True,
+                    )
+                    async for chunk in stream_gen:
+                        full_content.append(chunk)
+                        yield f"data: {json.dumps({'content': chunk})}\n\n"
+                except Exception as e:
+                    logger.error("Film analysis streaming error: %s", e)
+                    yield f"data: {json.dumps({'error': str(e)})}\n\n"
+                    done_sent = True
+                    yield f"data: {json.dumps({'content': '', 'done': True, 'session_id': session_id})}\n\n"
+                    return
+
+                complete_content = "".join(full_content)
+                db.table("chat_messages").insert({
+                    "id": assistant_msg_id,
+                    "session_id": session_id,
+                    "role": "assistant",
+                    "content": complete_content,
+                }).execute()
+                self._update_session(session_id, message)
+                done_sent = True
+                yield f"data: {json.dumps({'content': '', 'done': True, 'session_id': session_id})}\n\n"
+
+                conversation = self._load_conversation(session_id)
+                await self.memory.extract_and_store_memories(user_id, domain, conversation)
+                return
+
+            if rule_result:
+                rule_response, rule_function = rule_result
+                yield f"data: {json.dumps({'session_id': session_id, 'message_id': assistant_msg_id, 'content': '', 'start': True, 'source': 'rule', 'function': rule_function})}\n\n"
+                yield f"data: {json.dumps({'content': rule_response})}\n\n"
+
+                db.table("chat_messages").insert({
+                    "id": assistant_msg_id,
+                    "session_id": session_id,
+                    "role": "assistant",
+                    "content": rule_response,
+                }).execute()
+
+                self._update_session(session_id, message)
+                done_sent = True
+                yield f"data: {json.dumps({'content': '', 'done': True, 'session_id': session_id})}\n\n"
+                return
+
+            # Fall through to LLM
+            messages = self._build_messages(session_id, domain, user_id)
             config = self._get_config()
 
-            yield f"data: {json.dumps({'session_id': session_id, 'message_id': assistant_msg_id, 'content': '', 'start': True, 'source': 'llm', 'function': '영화 전문 분석 (AI)'})}\n\n"
-
             full_content = []
+
+            yield f"data: {json.dumps({'session_id': session_id, 'message_id': assistant_msg_id, 'content': '', 'start': True, 'source': 'llm'})}\n\n"
+
             try:
                 stream_gen = await self.openrouter.chat_completion(
-                    messages=analysis_messages,
+                    messages=messages,
                     model=model_override or config["model"],
-                    temperature=0.7,
-                    max_tokens=1500,
+                    temperature=config["temperature"],
+                    max_tokens=config["max_tokens"],
                     stream=True,
                 )
+
                 async for chunk in stream_gen:
                     full_content.append(chunk)
                     yield f"data: {json.dumps({'content': chunk})}\n\n"
             except Exception as e:
-                logger.error("Film analysis streaming error: %s", e)
+                logger.error("LLM streaming error: %s", e)
                 yield f"data: {json.dumps({'error': str(e)})}\n\n"
+                done_sent = True
+                yield f"data: {json.dumps({'content': '', 'done': True, 'session_id': session_id})}\n\n"
+                return
+
+            # Save complete assistant message
+            complete_content = "".join(full_content)
+            db.table("chat_messages").insert({
+                "id": assistant_msg_id,
+                "session_id": session_id,
+                "role": "assistant",
+                "content": complete_content,
+            }).execute()
+
+            self._update_session(session_id, message)
+
+            done_sent = True
+            yield f"data: {json.dumps({'content': '', 'done': True, 'session_id': session_id})}\n\n"
+
+            # Extract memories and update context summary after stream completes
+            conversation = self._load_conversation(session_id)
+            await self.memory.extract_and_store_memories(user_id, domain, conversation)
+            await self.context.update_summary_if_needed(session_id)
+
+        except Exception as e:
+            logger.error("stream_chat unexpected error: %s", e)
+            if not done_sent:
+                yield f"data: {json.dumps({'error': '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'})}\n\n"
+                yield f"data: {json.dumps({'content': '', 'done': True, 'session_id': session_id if session_id else ''})}\n\n"
+
+    async def stream_chat_with_image(
+        self, message: str, domain: str, image_data: str, session_id: str | None = None, user_id: str = "default", model_override: str | None = None
+    ):
+        done_sent = False
+        try:
+            db = get_db()
+            session_id = self._get_or_create_session(session_id, domain, user_id)
+
+            # Save user message with image
+            user_msg_id = str(uuid.uuid4())
+            db.table("chat_messages").insert({
+                "id": user_msg_id,
+                "session_id": session_id,
+                "role": "user",
+                "content": message,
+                "image_data": image_data,
+            }).execute()
+
+            messages = self._build_messages(session_id, domain, user_id)
+            config = self._get_config()
+
+            full_content = []
+            assistant_msg_id = str(uuid.uuid4())
+
+            yield f"data: {json.dumps({'session_id': session_id, 'message_id': assistant_msg_id, 'content': '', 'start': True, 'source': 'llm'})}\n\n"
+
+            try:
+                stream_gen = await self.openrouter.chat_completion_with_image(
+                    messages=messages,
+                    image_base64=image_data,
+                    user_text=message,
+                    model=model_override or "openai/gpt-4o",
+                    temperature=config["temperature"],
+                    max_tokens=config["max_tokens"],
+                    stream=True,
+                )
+
+                async for chunk in stream_gen:
+                    full_content.append(chunk)
+                    yield f"data: {json.dumps({'content': chunk})}\n\n"
+            except Exception as e:
+                logger.error("Image LLM streaming error: %s", e)
+                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+                done_sent = True
                 yield f"data: {json.dumps({'content': '', 'done': True, 'session_id': session_id})}\n\n"
                 return
 
@@ -132,132 +266,21 @@ class ChatService:
                 "role": "assistant",
                 "content": complete_content,
             }).execute()
+
             self._update_session(session_id, message)
+
+            done_sent = True
             yield f"data: {json.dumps({'content': '', 'done': True, 'session_id': session_id})}\n\n"
 
             conversation = self._load_conversation(session_id)
             await self.memory.extract_and_store_memories(user_id, domain, conversation)
-            return
+            await self.context.update_summary_if_needed(session_id)
 
-        if rule_result:
-            rule_response, rule_function = rule_result
-            yield f"data: {json.dumps({'session_id': session_id, 'message_id': assistant_msg_id, 'content': '', 'start': True, 'source': 'rule', 'function': rule_function})}\n\n"
-            yield f"data: {json.dumps({'content': rule_response})}\n\n"
-
-            db.table("chat_messages").insert({
-                "id": assistant_msg_id,
-                "session_id": session_id,
-                "role": "assistant",
-                "content": rule_response,
-            }).execute()
-
-            self._update_session(session_id, message)
-            yield f"data: {json.dumps({'content': '', 'done': True, 'session_id': session_id})}\n\n"
-            return
-
-        # Fall through to LLM
-        messages = self._build_messages(session_id, domain, user_id)
-        config = self._get_config()
-
-        full_content = []
-
-        yield f"data: {json.dumps({'session_id': session_id, 'message_id': assistant_msg_id, 'content': '', 'start': True, 'source': 'llm'})}\n\n"
-
-        try:
-            stream_gen = await self.openrouter.chat_completion(
-                messages=messages,
-                model=model_override or config["model"],
-                temperature=config["temperature"],
-                max_tokens=config["max_tokens"],
-                stream=True,
-            )
-
-            async for chunk in stream_gen:
-                full_content.append(chunk)
-                yield f"data: {json.dumps({'content': chunk})}\n\n"
         except Exception as e:
-            logger.error("LLM streaming error: %s", e)
-            yield f"data: {json.dumps({'error': str(e)})}\n\n"
-            yield f"data: {json.dumps({'content': '', 'done': True, 'session_id': session_id})}\n\n"
-            return
-
-        # Save complete assistant message
-        complete_content = "".join(full_content)
-        db.table("chat_messages").insert({
-            "id": assistant_msg_id,
-            "session_id": session_id,
-            "role": "assistant",
-            "content": complete_content,
-        }).execute()
-
-        self._update_session(session_id, message)
-
-        yield f"data: {json.dumps({'content': '', 'done': True, 'session_id': session_id})}\n\n"
-
-        # Extract memories and update context summary after stream completes
-        conversation = self._load_conversation(session_id)
-        await self.memory.extract_and_store_memories(user_id, domain, conversation)
-        await self.context.update_summary_if_needed(session_id)
-
-    async def stream_chat_with_image(
-        self, message: str, domain: str, image_data: str, session_id: str | None = None, user_id: str = "default", model_override: str | None = None
-    ):
-        db = get_db()
-        session_id = self._get_or_create_session(session_id, domain, user_id)
-
-        # Save user message with image
-        user_msg_id = str(uuid.uuid4())
-        db.table("chat_messages").insert({
-            "id": user_msg_id,
-            "session_id": session_id,
-            "role": "user",
-            "content": message,
-            "image_data": image_data,
-        }).execute()
-
-        messages = self._build_messages(session_id, domain, user_id)
-        config = self._get_config()
-
-        full_content = []
-        assistant_msg_id = str(uuid.uuid4())
-
-        yield f"data: {json.dumps({'session_id': session_id, 'message_id': assistant_msg_id, 'content': '', 'start': True, 'source': 'llm'})}\n\n"
-
-        try:
-            stream_gen = await self.openrouter.chat_completion_with_image(
-                messages=messages,
-                image_base64=image_data,
-                user_text=message,
-                model=model_override or "openai/gpt-4o",
-                temperature=config["temperature"],
-                max_tokens=config["max_tokens"],
-                stream=True,
-            )
-
-            async for chunk in stream_gen:
-                full_content.append(chunk)
-                yield f"data: {json.dumps({'content': chunk})}\n\n"
-        except Exception as e:
-            logger.error("Image LLM streaming error: %s", e)
-            yield f"data: {json.dumps({'error': str(e)})}\n\n"
-            yield f"data: {json.dumps({'content': '', 'done': True, 'session_id': session_id})}\n\n"
-            return
-
-        complete_content = "".join(full_content)
-        db.table("chat_messages").insert({
-            "id": assistant_msg_id,
-            "session_id": session_id,
-            "role": "assistant",
-            "content": complete_content,
-        }).execute()
-
-        self._update_session(session_id, message)
-
-        yield f"data: {json.dumps({'content': '', 'done': True, 'session_id': session_id})}\n\n"
-
-        conversation = self._load_conversation(session_id)
-        await self.memory.extract_and_store_memories(user_id, domain, conversation)
-        await self.context.update_summary_if_needed(session_id)
+            logger.error("stream_chat_with_image unexpected error: %s", e)
+            if not done_sent:
+                yield f"data: {json.dumps({'error': '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'})}\n\n"
+                yield f"data: {json.dumps({'content': '', 'done': True, 'session_id': session_id if session_id else ''})}\n\n"
 
     def _get_or_create_session(self, session_id: str | None, domain: str, user_id: str) -> str:
         db = get_db()

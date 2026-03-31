@@ -92,6 +92,7 @@ const api = {
 function parseSSEStream(reader, onChunk, onDone, onError) {
     const decoder = new TextDecoder();
     let buffer = '';
+    let doneReceived = false;
 
     function processBuffer() {
         const lines = buffer.split('\n');
@@ -104,6 +105,7 @@ function parseSSEStream(reader, onChunk, onDone, onError) {
                     if (data.error) {
                         if (onError) onError(data.error);
                     } else if (data.done) {
+                        doneReceived = true;
                         onDone(data);
                     } else if (data.content) {
                         onChunk(data);
@@ -119,6 +121,10 @@ function parseSSEStream(reader, onChunk, onDone, onError) {
         reader.read().then(({ done, value }) => {
             if (done) {
                 processBuffer();
+                // Safety: if stream ended without a done event, force onDone
+                if (!doneReceived) {
+                    onDone({ session_id: '', forced: true });
+                }
                 return;
             }
             buffer += decoder.decode(value, { stream: true });
