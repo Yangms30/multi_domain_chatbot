@@ -762,29 +762,53 @@ class KnowledgeQuery:
 
     def _search_movies_by_title(self, title: str, limit: int = 3) -> list[dict]:
         db = get_db()
-        result = (
-            db.table("domain_knowledge")
-            .select("data")
-            .eq("domain", "movie")
-            .eq("category", "movie")
-            .ilike("title", f"%{title}%")
-            .limit(limit)
-            .execute()
-        )
-        if result.data:
-            return [r["data"] for r in result.data]
+        # 1. Try full-text search using GIN index (fast, uses idx_knowledge_title)
+        try:
+            result = (
+                db.table("domain_knowledge")
+                .select("data")
+                .eq("domain", "movie")
+                .eq("category", "movie")
+                .text_search("title", title, options={"type": "plain", "config": "simple"})
+                .limit(limit)
+                .execute()
+            )
+            if result.data:
+                return [r["data"] for r in result.data]
+        except Exception as e:
+            logger.warning("Full-text search failed, trying eq: %s", e)
 
-        # Fallback: search original_title too
-        result = (
-            db.table("domain_knowledge")
-            .select("data")
-            .eq("domain", "movie")
-            .eq("category", "movie")
-            .ilike("content", f"%{title}%")
-            .limit(limit)
-            .execute()
-        )
-        return [r["data"] for r in result.data] if result.data else []
+        # 2. Fallback: exact title match (uses btree index, very fast)
+        try:
+            result = (
+                db.table("domain_knowledge")
+                .select("data")
+                .eq("domain", "movie")
+                .eq("category", "movie")
+                .eq("title", title)
+                .limit(limit)
+                .execute()
+            )
+            if result.data:
+                return [r["data"] for r in result.data]
+        except Exception as e:
+            logger.warning("Exact title search failed: %s", e)
+
+        # 3. Last resort: ILIKE (slow, full scan, may timeout on free tier)
+        try:
+            result = (
+                db.table("domain_knowledge")
+                .select("data")
+                .eq("domain", "movie")
+                .eq("category", "movie")
+                .ilike("title", f"%{title}%")
+                .limit(limit)
+                .execute()
+            )
+            return [r["data"] for r in result.data] if result.data else []
+        except Exception as e:
+            logger.warning("ILIKE title search failed (timeout?): %s", e)
+            return []
 
     def _search_movies_by_genre(self, genre: str, limit: int = 5) -> list[dict]:
         db = get_db()
@@ -802,12 +826,13 @@ class KnowledgeQuery:
 
     def _search_movies_by_actor(self, actor_name: str, limit: int = 5) -> list[dict]:
         db = get_db()
+        # Use tags array (contains actor names) instead of content ilike (too slow on 88k rows)
         result = (
             db.table("domain_knowledge")
             .select("data")
             .eq("domain", "movie")
             .eq("category", "movie")
-            .ilike("content", f"%{actor_name}%")
+            .contains("tags", [actor_name])
             .order("data->>vote_average", desc=True)
             .limit(limit)
             .execute()
@@ -816,12 +841,13 @@ class KnowledgeQuery:
 
     def _search_movies_by_director(self, director_name: str, limit: int = 5) -> list[dict]:
         db = get_db()
+        # Use tags array (contains director name) instead of content ilike
         result = (
             db.table("domain_knowledge")
             .select("data")
             .eq("domain", "movie")
             .eq("category", "movie")
-            .ilike("content", f"%{director_name}%")
+            .contains("tags", [director_name])
             .order("data->>vote_average", desc=True)
             .limit(limit)
             .execute()
@@ -844,28 +870,43 @@ class KnowledgeQuery:
 
     def _search_movies_by_year_range(self, start: int, end: int, limit: int = 5) -> list[dict]:
         db = get_db()
-        # Fetch all movies and filter by year in Python (JSONB date filtering is complex)
-        result = (
-            db.table("domain_knowledge")
-            .select("data")
-            .eq("domain", "movie")
-            .eq("category", "movie")
-            .order("data->>vote_average", desc=True)
-            .execute()
-        )
-        if not result.data:
-            return []
-
+        # Use content ilike with year prefix to narrow down results
+        # This avoids fetching all 88k rows
         filtered = []
-        for r in result.data:
-            release = r["data"].get("release_date", "")
-            if release and len(release) >= 4:
-                try:
-                    year = int(release[:4])
-                    if start <= year <= end:
-                        filtered.append(r["data"])
-                except ValueError:
-                    pass
+        for year in range(end, start - 1, -1):
+            result = (
+                db.table("domain_knowledge")
+                .select("data")
+                .eq("domain", "movie")
+                .eq("category", "movie")
+                .ilike("title", f"%{year}%")
+                .order("data->>vote_average", desc=True)
+                .limit(limit)
+                .execute()
+            )
+            if result.data:
+                filtered.extend([r["data"] for r in result.data])
+            if len(filtered) >= limit:
+                break
+
+        # Fallback: try tags with year string
+        if not filtered:
+            for year in range(end, start - 1, -1):
+                result = (
+                    db.table("domain_knowledge")
+                    .select("data")
+                    .eq("domain", "movie")
+                    .eq("category", "movie")
+                    .contains("tags", [str(year)])
+                    .order("data->>vote_average", desc=True)
+                    .limit(limit)
+                    .execute()
+                )
+                if result.data:
+                    filtered.extend([r["data"] for r in result.data])
+                if len(filtered) >= limit:
+                    break
+
         return filtered[:limit]
 
     def _get_top_rated_movies(self, limit: int = 5) -> list[dict]:
@@ -896,12 +937,14 @@ class KnowledgeQuery:
 
     def _get_short_movies(self, limit: int = 5) -> list[dict]:
         db = get_db()
+        # Fetch limited set to avoid timeout on 88k rows
         result = (
             db.table("domain_knowledge")
             .select("data")
             .eq("domain", "movie")
             .eq("category", "movie")
             .order("data->>vote_average", desc=True)
+            .limit(200)
             .execute()
         )
         if not result.data:
@@ -917,6 +960,7 @@ class KnowledgeQuery:
             .eq("domain", "movie")
             .eq("category", "movie")
             .order("data->>vote_average", desc=True)
+            .limit(200)
             .execute()
         )
         if not result.data:
@@ -942,13 +986,15 @@ class KnowledgeQuery:
         movies = [r["data"] for r in result.data if (r["data"].get("audience_count") or 0) > 0]
         return movies[:limit]
 
-    def _get_all_movies(self) -> list[dict]:
+    def _get_all_movies(self, limit: int = 200) -> list[dict]:
         db = get_db()
         result = (
             db.table("domain_knowledge")
             .select("data")
             .eq("domain", "movie")
             .eq("category", "movie")
+            .order("data->>vote_average", desc=True)
+            .limit(limit)
             .execute()
         )
         return [r["data"] for r in result.data] if result.data else []

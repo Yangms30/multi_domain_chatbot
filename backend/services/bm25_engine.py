@@ -37,6 +37,8 @@ class Bm25Engine:
     def __init__(self):
         self._indices: dict = {}
         self._knowledge = KnowledgeQuery()
+        # In-memory title index for exact/substring matching (bypasses BM25 scoring)
+        self._title_index: dict[str, list[dict]] = {}  # {domain: [{title, title_lower, doc}]}
 
     def build_all_indices(self) -> dict[str, int]:
         """Build BM25+ indices for all domains. Returns {domain: doc_count}."""
@@ -101,14 +103,93 @@ class Bm25Engine:
             "documents": documents,
         }
 
+        # Build title index for fast substring matching
+        title_entries = []
+        for doc in documents:
+            title = doc.get("title", "")
+            if title:
+                title_entries.append({
+                    "title": title,
+                    "title_lower": title.lower(),
+                    "doc": doc,
+                })
+            # Also index original_title (English) and data.title for movies
+            data = doc.get("data") or {}
+            orig_title = data.get("original_title", "")
+            if orig_title and orig_title.lower() != title.lower():
+                title_entries.append({
+                    "title": title,  # keep Korean title for display
+                    "title_lower": orig_title.lower(),
+                    "doc": doc,
+                })
+        self._title_index[domain] = title_entries
+
         return len(documents)
+
+    def _title_search(self, query: str, domain: str, top_k: int = 5) -> list[dict] | None:
+        """
+        Fast in-memory title substring matching.
+        Checks if query contains a movie title or vice versa.
+        Returns matching documents sorted by title length (longer = more specific match).
+        """
+        if domain not in self._title_index:
+            return None
+
+        query_lower = query.lower().strip()
+        if len(query_lower) < 2:
+            return None
+
+        # Extract potential title keywords by removing common query words
+        title_stopwords = [
+            "정보", "알려", "줘", "해줘", "알려줘", "영화", "좀", "에 대해", "뭐야",
+            "출연진", "누구", "감독", "작품", "목록", "출연", "필모", "배우",
+            "추천", "비슷한", "같은", "유사한", "비교",
+            "소개", "줄거리", "내용", "평점", "러닝타임", "몇 분",
+            "관객수", "정확히", "역할", "어때", "재밌어",
+        ]
+        cleaned = query_lower
+        for sw in title_stopwords:
+            cleaned = cleaned.replace(sw, " ")
+        # Remove common particles
+        import re
+        cleaned = re.sub(r'\b(은|는|이|가|을|를|의|에|에서|도|만|이랑|랑|하고|와|과)\b', ' ', cleaned)
+        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+
+        if len(cleaned) < 2:
+            return None
+
+        matches = []
+        seen_titles = set()
+        for entry in self._title_index[domain]:
+            t_lower = entry["title_lower"]
+            # Check: cleaned query contains the title OR title contains cleaned query
+            if cleaned in t_lower or t_lower in cleaned:
+                if entry["title"] not in seen_titles:
+                    seen_titles.add(entry["title"])
+                    matches.append({
+                        "data": entry["doc"].get("data", {}),
+                        "title": entry["title"],
+                        "score": 100.0 + len(t_lower),  # title match = very high score
+                    })
+
+        if not matches:
+            return None
+
+        # Sort by title length desc (longer title = more specific match)
+        matches.sort(key=lambda x: x["score"], reverse=True)
+        return matches[:top_k]
 
     def search(self, query: str, domain: str, top_k: int | None = None) -> list[dict] | None:
         """
         Search for similar documents using BM25+.
+        First tries title matching, then falls back to BM25 scoring.
         Returns list of {"data": {...}, "title": str, "score": float} or None.
-        Scores are raw BM25 values (not normalized). Thresholds adjusted accordingly.
         """
+        # Try title matching first for more accurate results
+        title_results = self._title_search(query, domain, top_k=top_k or 5)
+        if title_results:
+            return title_results
+
         if domain not in self._indices:
             return None
 
@@ -148,9 +229,18 @@ class Bm25Engine:
 
     def try_respond(self, message: str, domain: str) -> tuple[str, str] | None:
         """
-        Try to respond using BM25+ search.
+        Try to respond using title matching first, then BM25+ search.
         Returns (response_text, function_name) or None.
         """
+        # 1. Try fast title substring matching first (most accurate for known titles)
+        title_results = self._title_search(message, domain)
+        if title_results:
+            config = self.DOMAIN_CONFIG.get(domain, self.DOMAIN_CONFIG["default"])
+            if domain == "movie":
+                return self._format_movie_response(title_results, title_results[0]["score"], config)
+            return self._format_generic_response(title_results, title_results[0]["score"], config)
+
+        # 2. Fall back to BM25+ similarity search
         results = self.search(message, domain)
         if not results:
             return None
