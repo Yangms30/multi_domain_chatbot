@@ -123,7 +123,8 @@ class ChatService:
                         yield f"data: {json.dumps({'content': chunk})}\n\n"
                 except Exception as e:
                     logger.error("Film analysis streaming error: %s", e)
-                    yield f"data: {json.dumps({'error': str(e)})}\n\n"
+                    error_msg = "죄송합니다. 영화 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
+                    yield f"data: {json.dumps({'content': error_msg})}\n\n"
                     done_sent = True
                     yield f"data: {json.dumps({'content': '', 'done': True, 'session_id': session_id})}\n\n"
                     return
@@ -182,9 +183,19 @@ class ChatService:
                     yield f"data: {json.dumps({'content': chunk})}\n\n"
             except Exception as e:
                 logger.error("LLM streaming error: %s", e)
-                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+                error_msg = "죄송합니다. 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
+                yield f"data: {json.dumps({'content': error_msg})}\n\n"
+                full_content.append(error_msg)
                 done_sent = True
                 yield f"data: {json.dumps({'content': '', 'done': True, 'session_id': session_id})}\n\n"
+                # Still save error response to DB so conversation flow isn't broken
+                db.table("chat_messages").insert({
+                    "id": assistant_msg_id,
+                    "session_id": session_id,
+                    "role": "assistant",
+                    "content": error_msg,
+                }).execute()
+                self._update_session(session_id, message)
                 return
 
             # Save complete assistant message
@@ -209,7 +220,8 @@ class ChatService:
         except Exception as e:
             logger.error("stream_chat unexpected error: %s", e)
             if not done_sent:
-                yield f"data: {json.dumps({'error': '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'})}\n\n"
+                error_msg = "죄송합니다. 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
+                yield f"data: {json.dumps({'content': error_msg})}\n\n"
                 yield f"data: {json.dumps({'content': '', 'done': True, 'session_id': session_id if session_id else ''})}\n\n"
 
     async def stream_chat_with_image(
@@ -254,7 +266,8 @@ class ChatService:
                     yield f"data: {json.dumps({'content': chunk})}\n\n"
             except Exception as e:
                 logger.error("Image LLM streaming error: %s", e)
-                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+                error_msg = "죄송합니다. 이미지 분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
+                yield f"data: {json.dumps({'content': error_msg})}\n\n"
                 done_sent = True
                 yield f"data: {json.dumps({'content': '', 'done': True, 'session_id': session_id})}\n\n"
                 return
@@ -279,7 +292,8 @@ class ChatService:
         except Exception as e:
             logger.error("stream_chat_with_image unexpected error: %s", e)
             if not done_sent:
-                yield f"data: {json.dumps({'error': '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'})}\n\n"
+                error_msg = "죄송합니다. 일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
+                yield f"data: {json.dumps({'content': error_msg})}\n\n"
                 yield f"data: {json.dumps({'content': '', 'done': True, 'session_id': session_id if session_id else ''})}\n\n"
 
     def _get_or_create_session(self, session_id: str | None, domain: str, user_id: str) -> str:
