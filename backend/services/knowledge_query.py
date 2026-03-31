@@ -226,6 +226,14 @@ class KnowledgeQuery:
 
     # ── Movie Title Search ────────────────────────────────────────
 
+    # Genre/descriptor words to strip when extracting movie titles
+    _GENRE_DESCRIPTORS = [
+        "과학", "공상과학", "sf", "액션", "코미디", "로맨스", "공포", "호러", "스릴러",
+        "애니메이션", "애니", "드라마", "판타지", "범죄", "전쟁", "다큐멘터리", "다큐",
+        "가족", "음악", "뮤지컬", "모험", "미스터리", "역사", "사극", "서부",
+        "로맨틱", "무서운", "웃긴", "재밌는", "슬픈", "감동", "힐링",
+    ]
+
     def _try_movie_search(self, msg: str, msg_lower: str) -> tuple[str, str] | None:
         info_keywords = ["알려", "정보", "줄거리", "내용", "어떤 영화", "뭐야", "소개",
                          "출연", "감독", "평점", "언제 개봉", "개봉일", "몇 분", "러닝타임",
@@ -235,9 +243,9 @@ class KnowledgeQuery:
 
         # Remove keywords from message to extract title
         # Sort by length DESC so "알려줘" is removed before "알려"
-        remove_words = info_keywords + [
+        remove_words = info_keywords + self._GENRE_DESCRIPTORS + [
             "영화", "좀", "해줘", "해 줘", "알려줘", "에 대해", "에대해",
-            "어떤", "봤어", "봤는데", "줘", "좀",
+            "어떤", "봤어", "봤는데", "줘", "좀", "같은", "비슷한",
             "은", "는", "이", "가", "을", "를", "의", "?", "?",
         ]
         remove_words.sort(key=len, reverse=True)
@@ -245,7 +253,7 @@ class KnowledgeQuery:
         title_query = msg
         for kw in remove_words:
             title_query = title_query.replace(kw, "")
-        title_query = title_query.strip()
+        title_query = re.sub(r'\s+', ' ', title_query).strip()
 
         if len(title_query) < 2:
             return None
@@ -265,13 +273,18 @@ class KnowledgeQuery:
         if not any(kw in msg_lower for kw in similar_keywords):
             return None
 
-        # Extract title
+        # Extract title - remove similar keywords, genre descriptors, and common suffixes
+        remove_words = similar_keywords + self._GENRE_DESCRIPTORS + [
+            "영화", "추천", "좀", "해줘", "알려줘",
+            "이랑", "하고", "처럼", "같은 거",
+            "은", "는", "이", "가", "을", "를", "의", "?", "?",
+        ]
+        remove_words.sort(key=len, reverse=True)
+
         title_query = msg
-        for kw in similar_keywords + ["영화", "추천", "좀", "해줘", "알려줘",
-                                       "이랑", "하고", "처럼", "같은 거",
-                                       "은", "는", "이", "가", "을", "를", "의", "?", "?"]:
+        for kw in remove_words:
             title_query = title_query.replace(kw, "")
-        title_query = title_query.strip()
+        title_query = re.sub(r'\s+', ' ', title_query).strip()
 
         if len(title_query) < 2:
             return None
