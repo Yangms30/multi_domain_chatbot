@@ -33,7 +33,11 @@ class ChatService:
         }).execute()
 
         # Try rule-based response first (no LLM cost)
-        rule_result = self.rule_engine.try_respond(message, domain)
+        try:
+            rule_result = self.rule_engine.try_respond(message, domain)
+        except Exception as e:
+            logger.warning("Rule engine failed, falling through to LLM: %s", e)
+            rule_result = None
 
         if rule_result:
             content = rule_result[0]
@@ -97,7 +101,12 @@ class ChatService:
             assistant_msg_id = str(uuid.uuid4())
 
             # Try rule-based response first (no LLM cost)
-            rule_result = self.rule_engine.try_respond(message, domain)
+            # If rule engine fails (e.g. DB timeout), fall through to LLM
+            try:
+                rule_result = self.rule_engine.try_respond(message, domain)
+            except Exception as e:
+                logger.warning("Rule engine failed, falling through to LLM: %s", e)
+                rule_result = None
 
             if rule_result and rule_result[0] == "__FILM_ANALYSIS__":
                 # Film Analysis: hybrid — detected by rules, answered by LLM
