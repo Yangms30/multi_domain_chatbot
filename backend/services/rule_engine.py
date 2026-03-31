@@ -3,6 +3,7 @@ Rule-based response engine for multi-domain chatbot.
 Handles simple queries without LLM calls to save cost and reduce latency.
 """
 
+import json
 import logging
 import re
 
@@ -10,6 +11,29 @@ from services.knowledge_query import KnowledgeQuery
 from services.bm25_engine import Bm25Engine
 
 logger = logging.getLogger(__name__)
+
+# Keywords indicating the query needs LLM (analysis, creative, opinion, non-movie)
+_LLM_INTENT_KEYWORDS = [
+    # Analysis/interpretation
+    "��석", "해석", "상징", "의미", "메시지", "테마", "서사",
+    "촬영 기법", "연출 스타일", "스타일 차이",
+    # Creative
+    "시놉시스", "속편", "써줘", "만들어", "창작", "상상",
+    # Opinion/subjective
+    "생각해", "의견", "어떻게 봐", "평가해",
+    # Character/deep analysis
+    "심리", "변화 과정", "캐릭터 분석", "성격",
+    # Industry/reasoning
+    "산업", "영향", "트렌드", "주목받", "시작했",
+    # Non-movie domain
+    "날씨", "뉴스", "주식", "요리", "건강",
+]
+
+# Film analysis keywords (hybrid: DB context + LLM analysis)
+_FILM_ANALYSIS_KEYWORDS = [
+    "분석", "해석", "촬영기법", "촬영 기법", "스토리 구조", "테마", "상징",
+    "연출", "영화적", "기법", "서사", "메시지",
+]
 
 
 class RuleEngine:
@@ -25,12 +49,64 @@ class RuleEngine:
         """Access the search engine (for index building from main.py)."""
         return self._tfidf
 
+    def _is_llm_intent(self, msg_lower: str) -> bool:
+        """Check if the query requires LLM (analysis, creative, opinion, off-topic)."""
+        return any(kw in msg_lower for kw in _LLM_INTENT_KEYWORDS)
+
+    def _try_film_analysis_detect(self, message: str, msg_lower: str) -> tuple[str, str] | None:
+        """Detect film analysis request without DB. Returns __FILM_ANALYSIS__ marker."""
+        if not any(kw in msg_lower for kw in _FILM_ANALYSIS_KEYWORDS):
+            return None
+
+        # Extract movie title by removing analysis keywords
+        title = message
+        for kw in _FILM_ANALYSIS_KEYWORDS + [
+            "해줘", "알려줘", "설명", "영화", "좀", "해봐", "부탁",
+            "에 대해", "의", "을", "를", "이", "가",
+        ]:
+            title = title.replace(kw, "")
+        title = re.sub(r'\s+', ' ', title).strip()
+
+        if len(title) < 2:
+            return None
+
+        # Try BM25 to get movie context (in-memory, fast)
+        bm25_results = self._tfidf.search(title, "movie", top_k=1)
+        if bm25_results and bm25_results[0].get("data"):
+            movie = bm25_results[0]["data"]
+            context = {
+                "title": movie.get("title", title),
+                "director": movie.get("director", ""),
+                "genres": movie.get("genres", []),
+                "release_date": movie.get("release_date", ""),
+                "overview": movie.get("overview", ""),
+                "cast": [c.get("name", "") for c in movie.get("cast", [])[:5]],
+                "vote_average": movie.get("vote_average", 0),
+                "from_db": True,
+            }
+        else:
+            context = {"title": title, "from_db": False}
+
+        return ("__FILM_ANALYSIS__", json.dumps(context, ensure_ascii=False))
+
     def try_respond(self, message: str, domain: str) -> tuple[str, str] | None:
         """
         Try to generate a rule-based response.
         Returns (response, function_name) tuple if handled, None if LLM should handle it.
         """
-        # Try DB knowledge query first (works for any domain with data)
+        msg_lower = message.strip().lower()
+
+        # 1. Film analysis → hybrid path (BM25 context + LLM, no DB needed)
+        if domain == "movie":
+            film_result = self._try_film_analysis_detect(message, msg_lower)
+            if film_result:
+                return film_result
+
+        # 2. LLM-intent queries → skip rules, let LLM handle
+        if self._is_llm_intent(msg_lower):
+            return None
+
+        # 3. Try DB knowledge query (works for any domain with data)
         # If DB queries fail (e.g. Supabase timeout), skip to BM25
         try:
             kb_result = self._knowledge.try_respond(message, domain)
@@ -39,7 +115,7 @@ class RuleEngine:
         except Exception as e:
             logger.warning("Knowledge query failed (DB error), skipping to BM25: %s", e)
 
-        # Try BM25+ similarity search (in-memory, no DB calls)
+        # 4. Try BM25+ similarity search (in-memory, no DB calls)
         tfidf_result = self._tfidf.try_respond(message, domain)
         if tfidf_result:
             return tfidf_result
