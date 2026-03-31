@@ -3,10 +3,13 @@ Rule-based response engine for multi-domain chatbot.
 Handles simple queries without LLM calls to save cost and reduce latency.
 """
 
+import logging
 import re
 
 from services.knowledge_query import KnowledgeQuery
 from services.bm25_engine import Bm25Engine
+
+logger = logging.getLogger(__name__)
 
 
 class RuleEngine:
@@ -28,11 +31,15 @@ class RuleEngine:
         Returns (response, function_name) tuple if handled, None if LLM should handle it.
         """
         # Try DB knowledge query first (works for any domain with data)
-        kb_result = self._knowledge.try_respond(message, domain)
-        if kb_result:
-            return kb_result
+        # If DB queries fail (e.g. Supabase timeout), skip to BM25
+        try:
+            kb_result = self._knowledge.try_respond(message, domain)
+            if kb_result:
+                return kb_result
+        except Exception as e:
+            logger.warning("Knowledge query failed (DB error), skipping to BM25: %s", e)
 
-        # Try TF-IDF similarity search (fallback when pattern matching fails)
+        # Try BM25+ similarity search (in-memory, no DB calls)
         tfidf_result = self._tfidf.try_respond(message, domain)
         if tfidf_result:
             return tfidf_result
